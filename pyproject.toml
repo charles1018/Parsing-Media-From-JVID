@@ -1,0 +1,60 @@
+[project]
+name = "parsing-media-from-jvid"
+version = "1.0.0"
+description = "JVID 媒體下載工具 - 支援影片和圖片自動下載"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Charles", email = "" }
+]
+maintainers = [
+    { name = "Charles", email = "" }
+]
+keywords = ["jvid", "downloader", "media", "video", "image", "crawler"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+# 專案依賴
+dependencies = [
+    "tqdm>=4.64.1",
+    "rich>=13.9.4",
+    "requests>=2.31.0",
+    "pycryptodome>=3.21.0",
+    "beautifulsoup4>=4.12.2",
+    "psutil>=5.9.8",
+    "soupsieve>=2.0,<3.0",
+]
+
+[project.scripts]
+jvid-dl = "Entry:main"
+jvid = "Entry:main"           # 短別名
+jvid-download = "Entry:main"  # 描述性別名
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["package"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/charles1018/Parsing-Media-From-JVID"
+Repository = "https://github.com/charles1018/Parsing-Media-From-JVID"
+Issues = "https://github.com/charles1018/Parsing-Media-From-JVID/issues"
+Changelog = "https://github.com/charles1018/Parsing-Media-From-JVID/blob/main/CHANGELOG.md"

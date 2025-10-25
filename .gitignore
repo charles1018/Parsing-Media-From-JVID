@@ -1,5 +1,23 @@
+# Python
 __pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDEs
 .idea
+.vscode
 .ipynb_checkpoints
+
+# 敏感資料
 permissions.txt
+*_cookies.json
+
+# 下載目錄
 media
+
+# uv 相關
+.venv
+uv.lock
+.python-version
