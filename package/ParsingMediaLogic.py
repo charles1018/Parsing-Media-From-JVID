@@ -24,7 +24,7 @@ class ParsingMediaLogic:
     def __init__(self, obj):
         self.type = obj.type
         self.url = obj.url
-        self.path = os.getcwd() + '\\' + obj.path
+        self.path = os.path.join(os.getcwd(), obj.path)  # 跨平台路徑處理
         self.auto_resume = obj.auto_resume  # 自動恢復選項
         self.console = Console()
         self.diagnostic_mode = None  # 初始化診斷模式為 None
@@ -66,10 +66,11 @@ class ParsingMediaLogic:
             cookie_manager.print_cookie_info(headers)
             return headers
         
-        # 回退：嘗試從舊的 permissions.txt 讀取
-        print("⚠️  未找到 cookies 文件，嘗試讀取 permissions.txt...")
+        # 回退:嘗試從舊的 permissions.txt 讀取
+        print("⚠️  未找到 cookies 文件,嘗試讀取 permissions.txt...")
         try:
-            txt = [i for i in open(os.getcwd() + '\\package\\permissions.txt', 'r')]
+            permissions_path = os.path.join(os.getcwd(), 'package', 'permissions.txt')
+            txt = [i for i in open(permissions_path, 'r')]
             headers = {
                 'user-agent': user_agent,
                 'authorization': txt[0].split(',')[-1].replace('\n', ''),
