@@ -1,0 +1,40 @@
+services:
+  jvid-dl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jvid-dl:latest
+    container_name: jvid-downloader
+    
+    # 環境變數（從 .env 檔案讀取）
+    env_file:
+      - .env
+    
+    # Volume 掛載
+    volumes:
+      # Cookie 檔案掛載（只讀）
+      - ./www.jvid.com_cookies.json:/app/cookies/www.jvid.com_cookies.json:ro
+      # 下載目錄掛載（讀寫）
+      - ./media:/app/media
+      # 如果需要使用其他 cookie 檔案名稱，可以取消註解下面這行
+      # - ./cookies.json:/app/cookies/cookies.json:ro
+    
+    # 工作目錄
+    working_dir: /app
+    
+    # 重啟策略
+    restart: unless-stopped
+    
+    # 資源限制（可選）
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # 網路模式
+    network_mode: bridge
+    

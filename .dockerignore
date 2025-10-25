@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 專案特定
+media/
+*.json
+!pyproject.toml
+sample/
+
+# 文檔和報告
+*.md
+!README.md
+*.txt
+!requirements.txt
+
+# 暫存和日誌
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 測試
+test_*.py
+tests/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/

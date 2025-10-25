@@ -14,6 +14,9 @@ __pycache__
 permissions.txt
 *_cookies.json
 
+# 環境變數（Docker）
+.env
+
 # 下載目錄
 media
 
@@ -25,7 +28,14 @@ uv.lock
 # 臨時交接文檔（僅供對話視窗間傳遞）
 CLEANUP_EXECUTION_PLAN.md
 NEXT_CHAT_OPENER.md
-
-
-# Docker planning documents (local use only)
-DOCKER_*.md
+FILE_ALLOCATION_PLAN.md
+GIT_CLEANUP_*.md
+GIT_HISTORY_*.md
+HANDOFF_*.md
+NEXT_CHAT_*.md
+REBASE_*.md
+COPY_TO_NEXT_CHAT.txt
+SUMMARY.txt
+all-changes.txt
+DOCKER_QUICK_START.md
+DOCKER_NEXT_CHAT.md

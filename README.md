@@ -46,10 +46,34 @@ uv sync
 uv run jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 ```
 
+## 🐳 Docker 部署（推薦）
+
+支援使用 Docker 進行一鍵部署，無需配置 Python 環境！
+
+### 快速開始
+
+```bash
+# 1. 建構映像
+docker compose build
+
+# 2. 執行下載
+docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
+```
+
+**優勢：**
+- ✅ 環境隔離，無依賴衝突
+- ✅ 跨平台一致性
+- ✅ 一鍵部署，快速上手
+
+**詳細說明請參閱：** [DOCKER.md](DOCKER.md)
+
+---
+
 ## 📖 完整文檔
 
 | 文檔 | 說明 | 連結 |
 |------|------|------|
+| 🐳 Docker 部署 | Docker 容器化部署完整指南 | [DOCKER.md](DOCKER.md) |
 | 📘 使用者指南 | 詳細使用說明、FAQ、批次下載 | [USER_GUIDE.md](USER_GUIDE.md) |
 | 🔧 開發者指南 | 開發環境、專案結構、貢獻指南 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) |
 | 📝 變更日誌 | 版本歷史和更新記錄 | [CHANGELOG.md](CHANGELOG.md) |
