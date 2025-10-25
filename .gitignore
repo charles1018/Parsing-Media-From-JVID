@@ -21,3 +21,11 @@ media
 .venv
 uv.lock
 .python-version
+
+# 臨時交接文檔（僅供對話視窗間傳遞）
+CLEANUP_EXECUTION_PLAN.md
+NEXT_CHAT_OPENER.md
+
+
+# Docker planning documents (local use only)
+DOCKER_*.md
