@@ -110,7 +110,7 @@ class ImageProcessor:
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                file_path = f'{self.path}/{self.count}.jpg'
+                file_path = os.path.join(self.path, f'{self.count}.jpg')
                 with open(file_path, 'wb') as f:
                     f.write(res.content)
                 self.count += 1

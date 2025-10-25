@@ -55,7 +55,7 @@ class VideoProcessor:
         # 依次處理每個影片URL
         for i, url in enumerate(video_urls):
             # 為每個版本創建不同的子目錄
-            version_path = f"{self.base_path}\\版本_{i+1}_{video_types[i]}"
+            version_path = os.path.join(self.base_path, f"版本_{i+1}_{video_types[i]}")
             if not os.path.exists(version_path):
                 os.makedirs(version_path)
             
@@ -74,11 +74,11 @@ class VideoProcessor:
                 self.console.print(f"無法獲取 m3u8 檔案: {url}")
                 continue
             
-            with open(f"{version_path}\\media.m3u8", 'w') as f:
+            with open(os.path.join(version_path, "media.m3u8"), 'w') as f:
                 f.write(res.text)
             
             # 讀取 m3u8 密鑰 & 目標清單
-            media = [i for i in open(f"{version_path}\\media.m3u8", 'r')]
+            media = [i for i in open(os.path.join(version_path, "media.m3u8"), 'r')]
             
             # 查找並解析密鑰行
             key_lines = [i for i in media if '#EXT-X-KEY' in i]
@@ -110,7 +110,7 @@ class VideoProcessor:
             self.cryptor = AES.new(res.content, AES.MODE_CBC)
             
             # 準備下載分段列表
-            media = [i for i in open(f"{version_path}\\media.m3u8", 'r')]
+            media = [i for i in open(os.path.join(version_path, "media.m3u8"), 'r')]
             self.todo_list = [self.base_url + i for i in ''.join(media).split('\n') if '#EXT' not in i and i != '']
             
             # 重置計數器
@@ -124,7 +124,7 @@ class VideoProcessor:
             self.download_ts_segments()
             
             # 創建合併文件列表
-            with open(f"{version_path}\\media.txt", 'w') as f:
+            with open(os.path.join(version_path, "media.txt"), 'w') as f:
                 for i in range(0, self.count):
                     f.write(f"file '{i}.ts'\n")
             
@@ -198,7 +198,8 @@ class VideoProcessor:
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                with open(self.base_path + '\\' + str(self.count) + '.ts', 'wb') as f:
+                ts_file_path = os.path.join(self.base_path, f"{self.count}.ts")
+                with open(ts_file_path, 'wb') as f:
                     decrypto = self.cryptor.decrypt(res.content)
                     f.write(decrypto)
                 self.count += 1
@@ -236,7 +237,8 @@ class VideoProcessor:
             except IOError as e:
                 print(e)
                 
-        self.console.print(f"合併完成: {self.base_path}\\{output_name}")
+        output_path = os.path.join(self.base_path, output_name)
+        self.console.print(f"合併完成: {output_path}")
     
     def remove_all_temp_files(self):
         """直接刪除所有版本的暫存檔，不詢問"""

@@ -100,7 +100,7 @@ class ParsingMediaLogic:
         """記錄下載日誌"""
         # 確保目錄存在
         ParsingMediaLogic.check_folder(self.path)
-        file = self.path + '\\downloads_log.txt'
+        file = os.path.join(self.path, 'downloads_log.txt')
         content = f'{str(ParsingMediaLogic.utc_to_now())[:19]} | {self.url}\n'
         if not os.path.exists(file):
             with open(file, 'w') as f:
@@ -235,7 +235,7 @@ class ParsingMediaLogic:
         soup = BeautifulSoup(res.text, 'html.parser')
         
         # 取得標題並建立目錄
-        self.path += f'\\{ParsingMediaLogic.get_target_title(soup)}'
+        self.path = os.path.join(self.path, ParsingMediaLogic.get_target_title(soup))
         if not os.path.exists(self.path):
             ParsingMediaLogic.check_folder(self.path)
         
@@ -307,7 +307,7 @@ class ParsingMediaLogic:
             # 如果已經處理過影片，創建圖片子目錄
             image_path = self.path
             if has_video:
-                image_path = f"{self.path}\\images"
+                image_path = os.path.join(self.path, "images")
                 if not os.path.exists(image_path):
                     ParsingMediaLogic.check_folder(image_path)
             
