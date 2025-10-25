@@ -33,13 +33,24 @@ class CookieManager:
         """
         在專案目錄中尋找 cookie 文件
         
+        搜索順序：
+        1. 根目錄 (base_path/)
+        2. cookies 子目錄 (base_path/cookies/)
+        
         Returns:
             找到的 cookie 文件路徑，若無則返回 None
         """
-        for filename in self.COOKIE_FILENAMES:
-            cookie_path = self.base_path / filename
-            if cookie_path.exists():
-                return cookie_path
+        # 搜索位置列表
+        search_paths = [
+            self.base_path,  # 根目錄（用於本地開發）
+            self.base_path / 'cookies'  # cookies 子目錄（用於 Docker）
+        ]
+        
+        for search_path in search_paths:
+            for filename in self.COOKIE_FILENAMES:
+                cookie_path = search_path / filename
+                if cookie_path.exists():
+                    return cookie_path
         return None
     
     def load_cookies(self) -> Optional[list]:
