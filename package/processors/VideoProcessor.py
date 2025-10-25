@@ -1,0 +1,251 @@
+# -*- coding: utf-8 -*-
+"""
+@author: PC
+Update Time: 2025-03-22
+影片處理器 - 負責處理影片的下載和轉換
+"""
+import os
+import subprocess
+from subprocess import PIPE, STDOUT
+from Crypto.Cipher import AES
+import random
+import time
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+class VideoProcessor:
+    def __init__(self, network_manager, base_path, console, auto_resume=False):
+        """
+        初始化影片處理器
+        
+        參數:
+            network_manager: 網路管理器物件
+            base_path: 基本下載路徑
+            console: 控制台物件
+            auto_resume: 是否自動恢復下載
+        """
+        self.network_manager = network_manager
+        self.base_path = base_path
+        self.console = console
+        self.auto_resume = auto_resume
+        self.cryptor = None
+        self.base_url = None
+        self.todo_list = []
+        self.count = 0
+        self.MAX_WORKERS = 1  # 預設使用單執行緒以確保下載完整性
+        self.download_active = True
+        self.paused = False
+    
+    def process_video_urls(self, video_urls, video_types):
+        """
+        處理影片URL列表，下載並轉換影片
+        
+        參數:
+            video_urls: 影片URL列表
+            video_types: 影片類型列表
+            
+        返回:
+            成功處理的URL數量
+        """
+        self.console.print(f"找到 {len(video_urls)} 個不同版本的影片，將下載全部版本")
+        for i, (url, vtype) in enumerate(zip(video_urls, video_types)):
+            self.console.print(f"[{i+1}] 類型: {vtype}, URL: {url}")
+            
+        success_count = 0
+        # 依次處理每個影片URL
+        for i, url in enumerate(video_urls):
+            # 為每個版本創建不同的子目錄
+            version_path = f"{self.base_path}\\版本_{i+1}_{video_types[i]}"
+            if not os.path.exists(version_path):
+                os.makedirs(version_path)
+            
+            # 設置當前處理的URL和目標路徑
+            current_path = self.base_path
+            local_path = version_path  # 當前版本的保存路徑
+            
+            self.console.print(f"\n正在處理第 {i+1} 個版本: {video_types[i]}")
+            
+            # 設置基本URL用於解析相對路徑
+            self.base_url = url.replace(url.split('/')[-1], '')
+            
+            # 使用重試機制取得 m3u8 檔案
+            res = self.network_manager.request_with_retry(url)
+            if res is None:
+                self.console.print(f"無法獲取 m3u8 檔案: {url}")
+                continue
+            
+            with open(f"{version_path}\\media.m3u8", 'w') as f:
+                f.write(res.text)
+            
+            # 讀取 m3u8 密鑰 & 目標清單
+            media = [i for i in open(f"{version_path}\\media.m3u8", 'r')]
+            
+            # 查找並解析密鑰行
+            key_lines = [i for i in media if '#EXT-X-KEY' in i]
+            if not key_lines:
+                self.console.print("找不到加密密鑰行，可能是未加密影片或格式不兼容")
+                continue
+            
+            try:
+                key_line = key_lines[0]
+                key_parts = key_line.split(',')
+                uri_parts = [p for p in key_parts if 'URI=' in p]
+                
+                if not uri_parts:
+                    self.console.print("無法從密鑰行解析URI")
+                    continue
+                
+                key = uri_parts[0].split('URI=')[-1][1:-1]
+            except Exception as e:
+                self.console.print(f"解析密鑰時出錯: {str(e)}")
+                continue
+            
+            # 使用重試機制取得解密金鑰
+            res = self.network_manager.request_with_retry(self.base_url + key)
+            if res is None:
+                self.console.print(f"無法獲取解密金鑰: {self.base_url + key}")
+                continue
+            
+            # 設置AES解密器
+            self.cryptor = AES.new(res.content, AES.MODE_CBC)
+            
+            # 準備下載分段列表
+            media = [i for i in open(f"{version_path}\\media.m3u8", 'r')]
+            self.todo_list = [self.base_url + i for i in ''.join(media).split('\n') if '#EXT' not in i and i != '']
+            
+            # 重置計數器
+            self.count = 0
+            
+            # 保存當前工作目錄
+            current_working_dir = self.base_path
+            self.base_path = version_path  # 臨時修改保存路徑
+            
+            # 下載 TS 分段
+            self.download_ts_segments()
+            
+            # 創建合併文件列表
+            with open(f"{version_path}\\media.txt", 'w') as f:
+                for i in range(0, self.count):
+                    f.write(f"file '{i}.ts'\n")
+            
+            # 合併 ts 檔並轉為 mp4
+            self.combine_ts_to_mp4()
+            
+            # 還原原始路徑，準備處理下一個版本
+            self.base_path = current_working_dir
+            success_count += 1
+        
+        # 下載完成後刪除暫存檔
+        self.remove_all_temp_files()
+        
+        return success_count
+    
+    def download_ts_segments(self):
+        """下載所有TS分段"""
+        # 初始化執行緒數量 (預設使用單執行緒)
+        current_workers = 1  # 變更為單執行緒以確保下載完整性
+        
+        self.console.print(f"開始下載，執行緒數: {current_workers}，最大執行緒數: {self.MAX_WORKERS}")
+        
+        # 創建進度條
+        schedule = tqdm(total=len(self.todo_list), desc='Downloads Schedule: ')
+        
+        # 批次處理，避免一次提交所有任務導致記憶體問題
+        todo_chunks = [self.todo_list[i:i+100] for i in range(0, len(self.todo_list), 100)]
+        
+        for chunk_index, current_chunk in enumerate(todo_chunks):
+            with ThreadPoolExecutor(max_workers=current_workers) as executor:
+                # 提交當前批次的任務
+                future_to_url = {executor.submit(self.create_ts_media, url): url for url in current_chunk}
+                
+                # 處理完成的任務
+                for future in as_completed(future_to_url):
+                    url = future_to_url[future]
+                    try:
+                        # 獲取任務結果
+                        ret = future.result(timeout=20)
+                        if ret == 0:  # 成功
+                            schedule.update(1)
+                    except Exception as e:
+                        self.console.print(f"處理任務時出錯: {type(e).__name__}: {str(e)}")
+            
+            # 顯示批次完成情況
+            if chunk_index < len(todo_chunks) - 1:
+                self.console.print(f"批次 {chunk_index+1}/{len(todo_chunks)} 完成")
+                # 批次之間的間隔，模擬人類瀏覽行為，增加冷卻時間避免被封鎖
+                wait_time = random.uniform(1.0, 3.0)
+                self.console.print(f"休息 {wait_time:.1f} 秒以避免限流...")
+                time.sleep(wait_time)
+        
+        # 完成進度條            
+        schedule.close()
+    
+    def create_ts_media(self, url):
+        """
+        下載並解密 TS 分段檔案
+        
+        參數:
+            url: TS 分段的 URL
+            
+        返回:
+            成功返回 0，失敗返回 -1
+        """
+        ret = -1
+        try:
+            # 添加輕微隨機延遲，模擬更自然的人類行為
+            time.sleep(random.uniform(0.1, 0.3))
+            
+            # 使用重試機制下載
+            res = self.network_manager.request_with_retry(url)
+            if res:
+                with open(self.base_path + '\\' + str(self.count) + '.ts', 'wb') as f:
+                    decrypto = self.cryptor.decrypt(res.content)
+                    f.write(decrypto)
+                self.count += 1
+                ret = 0
+        except Exception as e:
+            self.console.print(f"處理 TS 檔案錯誤: {type(e).__name__}: {str(e)}")
+        return ret
+    
+    def combine_ts_to_mp4(self):
+        """合併 TS 文件為 MP4"""
+        # 提取當前處理的版本名稱
+        folder_name = os.path.basename(self.base_path)
+        output_name = "media.mp4"
+        
+        # 如果是版本目錄，使用自定義名稱
+        if folder_name.startswith('版本_'):
+            output_name = folder_name + ".mp4"
+        
+        cmdline = f'ffmpeg -f concat -i media.txt -c copy {output_name}'
+        self.console.print(f"執行合併命令: {cmdline}")
+        
+        pop = subprocess.Popen(cmdline,
+                              stdout=PIPE,
+                              stderr=STDOUT,
+                              cwd=self.base_path.lower(),
+                              shell=True)
+
+        while pop.poll() is None:
+            line = pop.stdout.readline()
+            try:
+                line = line.decode('utf8')
+                print(line)
+            except UnicodeDecodeError as e:
+                pass
+            except IOError as e:
+                print(e)
+                
+        self.console.print(f"合併完成: {self.base_path}\\{output_name}")
+    
+    def remove_all_temp_files(self):
+        """直接刪除所有版本的暫存檔，不詢問"""
+        # 遍歷所有版本子目錄
+        for root, dirs, files in os.walk(self.base_path):
+            for dir_name in dirs:
+                if dir_name.startswith('版本_'):
+                    version_path = os.path.join(root, dir_name)
+                    # 刪除該版本目錄下的暫存檔
+                    for file in [f for f in os.listdir(version_path) if f.split('.')[-1] in ['ts', 'm3u8', 'txt']]:
+                        os.remove(os.path.join(version_path, file))
+        self.console.print("已刪除所有版本的暫存檔")
