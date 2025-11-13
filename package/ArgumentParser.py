@@ -12,6 +12,11 @@ class AP:
 
     @staticmethod
     def parse_args() -> Namespace:
+        # 從環境變數讀取預設值
+        default_path = os.getenv('DOWNLOAD_PATH', 'media')
+        default_threads = int(os.getenv('DEFAULT_THREADS', '1'))
+        default_auto_resume = os.getenv('AUTO_RESUME', 'false').lower() == 'true'
+
         parse = ArgumentParser()
         parse.add_argument('-t', '--type',
                            help='已梳除，保留以向下兼容 | ex: image / mp4',
@@ -22,24 +27,25 @@ class AP:
                            default='', type=str)
 
         parse.add_argument('-p', '--path',
-                           help="give a save path | ex: './media/'",
-                           default='media', type=str)
-                           
+                           help=f"give a save path | ex: './media/' (default: {default_path})",
+                           default=default_path, type=str)
+
         parse.add_argument('-a', '--auto-resume',
-                           help="automatically resume download without asking | ex: true",
-                           action='store_true')
-                           
+                           help=f"automatically resume download without asking (default: {default_auto_resume})",
+                           action='store_true',
+                           default=default_auto_resume)
+
         parse.add_argument('-d', '--diagnostic-mode',
                            help="enable diagnostic mode for troubleshooting | ex: true",
                            action='store_true')
-                           
+
         parse.add_argument('-w', '--working-url',
                            help="add a working URL to the examples list | ex: 'https://www.jvid.com/v/[WORKING_ID]'",
                            default='', type=str)
-                           
+
         parse.add_argument('-n', '--threads',
-                           help="specify the number of threads to use (default: 1) | ex: 3",
-                           default=1, type=int)
+                           help=f"specify the number of threads to use (default: {default_threads}) | ex: 3",
+                           default=default_threads, type=int)
 
         return parse.parse_args()
 
