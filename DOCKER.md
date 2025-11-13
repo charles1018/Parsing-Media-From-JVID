@@ -37,7 +37,10 @@ docker compose version
 
 ### 1. 準備 Cookie 檔案
 
-確保專案根目錄有 `www.jvid.com_cookies.json` 檔案。
+將 Cookie 檔案放在專案根目錄，支援以下檔名（自動搜尋）：
+- `www.jvid.com_cookies.json`（推薦）
+- `jvid_cookies.json`
+- `cookies.json`
 
 ### 2. 建構映像
 
@@ -152,13 +155,52 @@ docker compose run --rm jvid-dl \
   -a -n 3
 ```
 
+### 便利腳本（推薦）
+
+專案提供了簡化的便利腳本，無需記住長命令：
+
+#### Windows PowerShell
+
+```powershell
+# 基本使用
+.\docker-download.ps1 -Url "https://www.jvid.com/v/12345"
+
+# 多執行緒 + 自動續傳
+.\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Threads 3 -AutoResume
+
+# 診斷模式
+.\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Diagnostic
+```
+
+#### macOS/Linux/Git Bash
+
+```bash
+# 查看說明
+./docker-download.sh --help
+
+# 基本使用
+./docker-download.sh "https://www.jvid.com/v/12345"
+
+# 多執行緒 + 自動續傳
+./docker-download.sh "https://www.jvid.com/v/12345" -n 3 -a
+
+# 診斷模式
+./docker-download.sh "https://www.jvid.com/v/12345" -d
+```
+
+**優點：**
+- ✅ 簡化命令，易於使用
+- ✅ 參數驗證，減少錯誤
+- ✅ 清晰的輸出訊息
+- ✅ 跨平台支援
+
 ---
 
 ## ⚙️ 進階配置
 
 ### 自訂環境變數
 
-編輯 `.env` 檔案來調整配置：
+編輯 `.env` 檔案來設定預設行為：
 
 ```bash
 # 複製範例檔案
@@ -168,15 +210,36 @@ cp .env.example .env
 nano .env  # 或使用你喜歡的編輯器
 ```
 
+**支援的環境變數：**
+
+| 變數 | 說明 | 預設值 | 範例 |
+|------|------|--------|------|
+| `DEFAULT_THREADS` | 預設執行緒數量 | `1` | `3` |
+| `AUTO_RESUME` | 預設啟用自動續傳 | `false` | `true` |
+
+**範例 `.env` 配置：**
+
+```bash
+# 使用 3 個執行緒
+DEFAULT_THREADS=3
+
+# 預設啟用自動續傳
+AUTO_RESUME=true
+```
+
+**注意：**
+- 環境變數設定預設行為
+- 命令列參數優先級高於環境變數
+- 修改後需重新啟動容器才能生效
+
 ### 使用不同的 Cookie 檔案
 
-如果你的 Cookie 檔案名稱不同，可以修改 `docker-compose.yml`：
+容器會自動搜尋以下檔名，無需修改配置：
+- `www.jvid.com_cookies.json`
+- `jvid_cookies.json`
+- `cookies.json`
 
-```yaml
-volumes:
-  - ./my_custom_cookies.json:/app/cookies/cookies.json:ro
-  - ./media:/app/media
-```
+只需將 Cookie 檔案放在專案根目錄即可。
 
 ### 資源限制
 
@@ -209,7 +272,10 @@ urls=(
 
 for url in "${urls[@]}"; do
   echo "下載: $url"
-  docker compose run --rm jvid-dl -u "$url" -a
+  # 使用便利腳本
+  ./docker-download.sh "$url" -a
+  # 或使用 docker compose 命令
+  # docker compose run --rm jvid-dl -u "$url" -a
   echo "完成: $url"
   echo "---"
 done
