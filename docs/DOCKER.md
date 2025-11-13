@@ -530,7 +530,7 @@ docker compose run --rm jvid-dl -u "URL" -n 3 -a
 
 ### 專案文檔
 
-- [README.md](README.md) - 專案概覽
+- [README.md](../README.md) - 專案概覽
 - [USER_GUIDE.md](USER_GUIDE.md) - 使用者指南
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) - 開發者指南
 

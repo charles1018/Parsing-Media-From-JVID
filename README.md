@@ -38,7 +38,7 @@ uv sync
 
 使用瀏覽器擴充套件（如 EditThisCookie）導出 JVID cookies，保存為 `www.jvid.com_cookies.json` 放在專案根目錄。
 
-詳細步驟請參閱 [使用者指南](USER_GUIDE.md#-準備-cookies)
+詳細步驟請參閱 [使用者指南](docs/USER_GUIDE.md#-準備-cookies)
 
 ### 3. 開始下載
 
@@ -78,7 +78,7 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 - ✅ 一鍵部署，快速上手
 - ✅ 便利腳本簡化命令
 
-**詳細說明請參閱：** [DOCKER.md](DOCKER.md)
+**詳細說明請參閱：** [DOCKER.md](docs/DOCKER.md)
 
 ---
 
@@ -86,9 +86,9 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 
 | 文檔 | 說明 | 連結 |
 |------|------|------|
-| 🐳 Docker 部署 | Docker 容器化部署完整指南 | [DOCKER.md](DOCKER.md) |
-| 📘 使用者指南 | 詳細使用說明、FAQ、批次下載 | [USER_GUIDE.md](USER_GUIDE.md) |
-| 🔧 開發者指南 | 開發環境、專案結構、貢獻指南 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) |
+| 🐳 Docker 部署 | Docker 容器化部署完整指南 | [DOCKER.md](docs/DOCKER.md) |
+| 📘 使用者指南 | 詳細使用說明、FAQ、批次下載 | [USER_GUIDE.md](docs/USER_GUIDE.md) |
+| 🔧 開發者指南 | 開發環境、專案結構、貢獻指南 | [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 | 📝 變更日誌 | 版本歷史和更新記錄 | [CHANGELOG.md](CHANGELOG.md) |
 
 ## 📊 基本命令
@@ -136,7 +136,7 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3 -a
 ./jvid-download.sh "https://www.jvid.com/v/12345"
 ```
 
-更多使用情境請參閱 [使用者指南](USER_GUIDE.md#-使用情境)
+更多使用情境請參閱 [使用者指南](docs/USER_GUIDE.md#-使用情境)
 
 ## 🔧 專案結構
 
@@ -158,13 +158,13 @@ Parsing-Media-From-JVID/
 └── test_cookie_manager.py      # Cookie 測試腳本
 ```
 
-詳細結構說明請參閱 [開發者指南](DEVELOPER_GUIDE.md#-專案結構)
+詳細結構說明請參閱 [開發者指南](docs/DEVELOPER_GUIDE.md#-專案結構)
 
 ## 🤝 貢獻
 
 歡迎提交 Pull Request 或 Issue！
 
-開發環境設置和貢獻指南請參閱 [開發者指南](DEVELOPER_GUIDE.md#-開發環境設置)
+開發環境設置和貢獻指南請參閱 [開發者指南](docs/DEVELOPER_GUIDE.md#-開發環境設置)
 
 ## 📄 授權
 
