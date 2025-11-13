@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐳 Docker 優化 (2025-11-13)
+
+#### Added
+- ✨ **Docker 便利腳本**
+  - 新增 `docker-download.sh` - 用於 macOS/Linux/Git Bash
+  - 新增 `docker-download.ps1` - 用於 Windows PowerShell
+  - 支援常用參數：執行緒數 (-n)、自動續傳 (-a)、診斷模式 (-d)
+  - 包含完整使用說明和參數驗證
+  - 大幅簡化 Docker 下載命令
+
+#### Changed
+- ⚙️ **環境變數功能強化**
+  - `DEFAULT_THREADS` 環境變數現在真正生效
+  - `AUTO_RESUME` 環境變數現在真正生效
+  - ArgumentParser 支援從環境變數讀取預設值
+  - 命令列參數優先級仍高於環境變數
+
+#### Improved
+- 🔧 **docker-compose.yml 優化**
+  - 移除不適當的 `restart: unless-stopped` 策略
+  - 簡化 Cookie 檔案掛載方式
+  - 自動搜尋多種 Cookie 檔名 (www.jvid.com_cookies.json, jvid_cookies.json, cookies.json)
+  - 使用者無需修改配置檔即可使用不同檔名
+  - 移除預設的 network_mode 設定
+
+#### Documentation
+- 📝 更新 `DOCKER.md` - 新增便利腳本使用說明、環境變數配置說明
+- 📝 更新 `README.md` - 展示便利腳本使用範例
+- 📝 更新 `.env.example` - 簡化配置，移除未使用變數
+
 ### 🧪 測試階段完成 (2025-10-21)
 
 #### Fixed
