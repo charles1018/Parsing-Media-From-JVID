@@ -57,7 +57,7 @@ uv run jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 docker compose build
 
 # 2. 執行下載（使用便利腳本）
-./docker-download.sh "https://www.jvid.com/v/[PAGE_ID]"
+./scripts/docker-download.sh "https://www.jvid.com/v/[PAGE_ID]"
 
 # 或使用 docker compose 命令
 docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
@@ -66,10 +66,10 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 **便利腳本：**
 ```bash
 # macOS/Linux/Git Bash
-./docker-download.sh "URL" -n 3 -a
+./scripts/docker-download.sh "URL" -n 3 -a
 
 # Windows PowerShell
-.\docker-download.ps1 -Url "URL" -Threads 3 -AutoResume
+.\scripts\docker-download.ps1 -Url "URL" -Threads 3 -AutoResume
 ```
 
 **優勢：**
@@ -107,8 +107,8 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 - `jvid-download`
 
 **便捷腳本：**
-- Windows: `jvid-download.bat` 或 `jvid-download.ps1`
-- macOS/Linux: `jvid-download.sh`
+- Windows: `scripts/jvid-download.bat` 或 `scripts/jvid-download.ps1`
+- macOS/Linux: `scripts/jvid-download.sh`
 
 ## 🎯 使用範例
 
@@ -130,10 +130,10 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3 -a
 ### 使用便捷腳本
 ```bash
 # Windows
-.\jvid-download.ps1 -Url "https://www.jvid.com/v/12345" -AutoResume
+.\scripts\jvid-download.ps1 -Url "https://www.jvid.com/v/12345" -AutoResume
 
 # macOS/Linux
-./jvid-download.sh "https://www.jvid.com/v/12345"
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345"
 ```
 
 更多使用情境請參閱 [使用者指南](docs/USER_GUIDE.md#-使用情境)
@@ -154,8 +154,11 @@ Parsing-Media-From-JVID/
 │   ├── logger.py               # 日誌系統
 │   ├── terminal_utils.py       # 終端工具
 │   └── diagnostic_logger.py    # 診斷日誌
-├── jvid-download.*             # 便捷啟動腳本
-└── test_cookie_manager.py      # Cookie 測試腳本
+├── scripts/                    # 執行腳本
+│   ├── docker-download.*       # Docker 便利腳本
+│   └── jvid-download.*         # 本地執行腳本
+└── tests/                      # 測試檔案
+    └── test_cookie_manager.py  # Cookie 測試腳本
 ```
 
 詳細結構說明請參閱 [開發者指南](docs/DEVELOPER_GUIDE.md#-專案結構)

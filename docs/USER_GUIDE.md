@@ -140,15 +140,15 @@ https://www.jvid.com/v/12345
 Windows:
 ```powershell
 # CMD
-jvid-download.bat "https://www.jvid.com/v/12345"
+scripts\jvid-download.bat "https://www.jvid.com/v/12345"
 
 # PowerShell
-.\jvid-download.ps1 -Url "https://www.jvid.com/v/12345"
+.\scripts\jvid-download.ps1 -Url "https://www.jvid.com/v/12345"
 ```
 
 macOS/Linux:
 ```bash
-./jvid-download.sh "https://www.jvid.com/v/12345"
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345"
 ```
 
 **方式 2：入口點（推薦熟手，最簡潔）**
@@ -206,7 +206,7 @@ uv run python Entry.py -u "https://www.jvid.com/v/12345"
 uv run jvid-dl -u "https://www.jvid.com/v/12345" -p "my_downloads"
 
 # 使用便捷腳本
-./jvid-download.sh "https://www.jvid.com/v/12345" -p "my_downloads"
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345" -p "my_downloads"
 ```
 
 這會創建 `my_downloads/` 目錄並將媒體保存在其中。
@@ -220,7 +220,7 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -p "my_downloads"
 uv run jvid-dl -u "https://www.jvid.com/v/12345" -a
 
 # 使用便捷腳本
-./jvid-download.sh "https://www.jvid.com/v/12345" -a
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345" -a
 ```
 
 **何時使用:**
@@ -237,7 +237,7 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -a
 uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3
 
 # 使用便捷腳本
-./jvid-download.sh "https://www.jvid.com/v/12345" -n 3
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345" -n 3
 ```
 
 **注意事項:**
@@ -254,7 +254,7 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3
 uv run jvid-dl -u "https://www.jvid.com/v/12345" -d
 
 # 使用便捷腳本
-./jvid-download.sh "https://www.jvid.com/v/12345" -d
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345" -d
 ```
 
 **診斷模式會做什麼:**
@@ -277,7 +277,7 @@ media/diagnostic_reports/diagnostic_report_[timestamp].txt
 uv run jvid-dl -w "https://www.jvid.com/v/12345"
 
 # 使用便捷腳本
-./jvid-download.sh -w "https://www.jvid.com/v/12345"
+./scripts/jvid-download.sh -w "https://www.jvid.com/v/12345"
 ```
 
 成功案例會保存在 `media/working_examples.txt` 中。
@@ -429,7 +429,7 @@ uv sync
 uv run jvid-dl -u "https://www.jvid.com/v/12345"
 
 # 或使用便捷腳本
-./jvid-download.sh "https://www.jvid.com/v/12345"
+./scripts/jvid-download.sh "https://www.jvid.com/v/12345"
 ```
 
 ### 情境 2: 下載到特定資料夾

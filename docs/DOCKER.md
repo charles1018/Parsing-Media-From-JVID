@@ -163,29 +163,29 @@ docker compose run --rm jvid-dl \
 
 ```powershell
 # 基本使用
-.\docker-download.ps1 -Url "https://www.jvid.com/v/12345"
+.\scripts\docker-download.ps1 -Url "https://www.jvid.com/v/12345"
 
 # 多執行緒 + 自動續傳
-.\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Threads 3 -AutoResume
+.\scripts\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Threads 3 -AutoResume
 
 # 診斷模式
-.\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Diagnostic
+.\scripts\docker-download.ps1 -Url "https://www.jvid.com/v/12345" -Diagnostic
 ```
 
 #### macOS/Linux/Git Bash
 
 ```bash
 # 查看說明
-./docker-download.sh --help
+./scripts/docker-download.sh --help
 
 # 基本使用
-./docker-download.sh "https://www.jvid.com/v/12345"
+./scripts/docker-download.sh "https://www.jvid.com/v/12345"
 
 # 多執行緒 + 自動續傳
-./docker-download.sh "https://www.jvid.com/v/12345" -n 3 -a
+./scripts/docker-download.sh "https://www.jvid.com/v/12345" -n 3 -a
 
 # 診斷模式
-./docker-download.sh "https://www.jvid.com/v/12345" -d
+./scripts/docker-download.sh "https://www.jvid.com/v/12345" -d
 ```
 
 **優點：**
@@ -273,7 +273,7 @@ urls=(
 for url in "${urls[@]}"; do
   echo "下載: $url"
   # 使用便利腳本
-  ./docker-download.sh "$url" -a
+  ./scripts/docker-download.sh "$url" -a
   # 或使用 docker compose 命令
   # docker compose run --rm jvid-dl -u "$url" -a
   echo "完成: $url"

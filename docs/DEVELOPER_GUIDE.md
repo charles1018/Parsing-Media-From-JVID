@@ -129,8 +129,8 @@ uv run jvid-dl --help
 uv run python Entry.py --help
 
 # 方法 3：使用便捷腳本
-./jvid-download.sh --help  # macOS/Linux
-jvid-download.bat --help   # Windows
+./scripts/jvid-download.sh --help  # macOS/Linux
+scripts/jvid-download.bat --help   # Windows
 ```
 
 > 💡 **uv 最佳實踐：** 使用 `uv run` 命令會自動管理虛擬環境，無需手動啟動。這是 uv 的核心優勢之一！
