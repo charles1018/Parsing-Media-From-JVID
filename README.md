@@ -56,14 +56,27 @@ uv run jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 # 1. 建構映像
 docker compose build
 
-# 2. 執行下載
+# 2. 執行下載（使用便利腳本）
+./docker-download.sh "https://www.jvid.com/v/[PAGE_ID]"
+
+# 或使用 docker compose 命令
 docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
+```
+
+**便利腳本：**
+```bash
+# macOS/Linux/Git Bash
+./docker-download.sh "URL" -n 3 -a
+
+# Windows PowerShell
+.\docker-download.ps1 -Url "URL" -Threads 3 -AutoResume
 ```
 
 **優勢：**
 - ✅ 環境隔離，無依賴衝突
 - ✅ 跨平台一致性
 - ✅ 一鍵部署，快速上手
+- ✅ 便利腳本簡化命令
 
 **詳細說明請參閱：** [DOCKER.md](DOCKER.md)
 
