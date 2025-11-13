@@ -224,7 +224,7 @@ class VideoProcessor:
         pop = subprocess.Popen(cmdline,
                               stdout=PIPE,
                               stderr=STDOUT,
-                              cwd=self.base_path.lower(),
+                              cwd=self.base_path,
                               shell=True)
 
         while pop.poll() is None:
