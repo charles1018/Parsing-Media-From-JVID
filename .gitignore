@@ -43,3 +43,7 @@ SUMMARY.txt
 all-changes.txt
 DOCKER_QUICK_START.md
 DOCKER_NEXT_CHAT.md
+
+# 程式碼審查報告（本地分析用，不納入版本管理）
+CODE_REVIEW_ROASTED.md
+docs/CODE_REVIEW_ROASTED.md
