@@ -10,40 +10,17 @@ __pycache__
 .vscode
 .ipynb_checkpoints
 
-# 敏感資料
+# Credentials
 permissions.txt
 *_cookies.json
 
-# 環境變數（Docker）
+# Environment
 .env
 
-# 下載目錄
+# Downloads
 media
 
-# uv 相關
+# uv package manager
 .venv
 uv.lock
 .python-version
-
-# Claude Code 本地配置（不納入版本管理）
-CLAUDE.md
-.claude/
-
-# 臨時交接文檔（僅供對話視窗間傳遞）
-CLEANUP_EXECUTION_PLAN.md
-NEXT_CHAT_OPENER.md
-FILE_ALLOCATION_PLAN.md
-GIT_CLEANUP_*.md
-GIT_HISTORY_*.md
-HANDOFF_*.md
-NEXT_CHAT_*.md
-REBASE_*.md
-COPY_TO_NEXT_CHAT.txt
-SUMMARY.txt
-all-changes.txt
-DOCKER_QUICK_START.md
-DOCKER_NEXT_CHAT.md
-
-# 程式碼審查報告（本地分析用，不納入版本管理）
-CODE_REVIEW_ROASTED.md
-docs/CODE_REVIEW_ROASTED.md
