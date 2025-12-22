@@ -7,6 +7,7 @@ Update Time: 2025-03-22
 import os
 import subprocess
 from subprocess import PIPE, STDOUT
+from threading import Lock
 from Crypto.Cipher import AES
 import random
 import time
@@ -28,10 +29,11 @@ class VideoProcessor:
         self.base_path = base_path
         self.console = console
         self.auto_resume = auto_resume
-        self.cryptor = None
+        self.aes_key = None  # 儲存 AES 金鑰，用於執行緒安全的解密
         self.base_url = None
         self.todo_list = []
         self.count = 0
+        self.count_lock = Lock()  # 保護計數器的執行緒鎖
         self.MAX_WORKERS = 1  # 預設使用單執行緒以確保下載完整性
         self.download_active = True
         self.paused = False
@@ -106,8 +108,8 @@ class VideoProcessor:
                 self.console.print(f"無法獲取解密金鑰: {self.base_url + key}")
                 continue
             
-            # 設置AES解密器
-            self.cryptor = AES.new(res.content, AES.MODE_CBC)
+            # 儲存 AES 金鑰（每個執行緒會建立自己的解密器以確保執行緒安全）
+            self.aes_key = res.content
             
             # 準備下載分段列表
             media = [i for i in open(os.path.join(version_path, "media.m3u8"), 'r')]
@@ -142,10 +144,10 @@ class VideoProcessor:
     
     def download_ts_segments(self):
         """下載所有TS分段"""
-        # 初始化執行緒數量 (預設使用單執行緒)
-        current_workers = 1  # 變更為單執行緒以確保下載完整性
-        
-        self.console.print(f"開始下載，執行緒數: {current_workers}，最大執行緒數: {self.MAX_WORKERS}")
+        # 使用設定的執行緒數量（已通過 Lock 確保執行緒安全）
+        current_workers = self.MAX_WORKERS
+
+        self.console.print(f"開始下載，執行緒數: {current_workers}")
         
         # 創建進度條
         schedule = tqdm(total=len(self.todo_list), desc='Downloads Schedule: ')
@@ -183,10 +185,10 @@ class VideoProcessor:
     def create_ts_media(self, url):
         """
         下載並解密 TS 分段檔案
-        
+
         參數:
             url: TS 分段的 URL
-            
+
         返回:
             成功返回 0，失敗返回 -1
         """
@@ -194,15 +196,22 @@ class VideoProcessor:
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
             time.sleep(random.uniform(0.1, 0.3))
-            
+
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                ts_file_path = os.path.join(self.base_path, f"{self.count}.ts")
+                # 使用鎖保護計數器，確保執行緒安全
+                with self.count_lock:
+                    current_count = self.count
+                    self.count += 1
+
+                # 每個執行緒建立自己的 AES 解密器（AES Cipher 不是執行緒安全的）
+                cryptor = AES.new(self.aes_key, AES.MODE_CBC)
+                decrypted_data = cryptor.decrypt(res.content)
+
+                ts_file_path = os.path.join(self.base_path, f"{current_count}.ts")
                 with open(ts_file_path, 'wb') as f:
-                    decrypto = self.cryptor.decrypt(res.content)
-                    f.write(decrypto)
-                self.count += 1
+                    f.write(decrypted_data)
                 ret = 0
         except Exception as e:
             self.console.print(f"處理 TS 檔案錯誤: {type(e).__name__}: {str(e)}")

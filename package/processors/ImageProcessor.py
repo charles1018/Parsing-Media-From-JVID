@@ -7,6 +7,7 @@ Update Time: 2025-03-22
 import os
 import random
 import time
+from threading import Lock
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -24,6 +25,7 @@ class ImageProcessor:
         self.path = path
         self.console = console
         self.count = 0
+        self.count_lock = Lock()  # 保護計數器的執行緒鎖
         self.todo_list = []
         self.MAX_WORKERS = 1  # 預設使用單執行緒以確保下載完整性
     
@@ -53,10 +55,10 @@ class ImageProcessor:
     
     def download_images(self):
         """下載所有圖片"""
-        # 初始化執行緒數量 (預設使用單執行緒)
-        current_workers = 1  # 單執行緒以確保下載完整性
-        
-        self.console.print(f"開始下載圖片，執行緒數: {current_workers}，最大執行緒數: {self.MAX_WORKERS}")
+        # 使用設定的執行緒數量（已通過 Lock 確保執行緒安全）
+        current_workers = self.MAX_WORKERS
+
+        self.console.print(f"開始下載圖片，執行緒數: {current_workers}")
         
         # 創建進度條
         schedule = tqdm(total=len(self.todo_list), desc='圖片下載進度: ')
@@ -95,10 +97,10 @@ class ImageProcessor:
     def create_image(self, url):
         """
         下載單個圖片
-        
+
         參數:
             url: 圖片URL
-            
+
         返回:
             成功返回 0，失敗返回 -1
         """
@@ -106,14 +108,18 @@ class ImageProcessor:
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
             time.sleep(random.uniform(0.2, 0.5))
-            
+
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                file_path = os.path.join(self.path, f'{self.count}.jpg')
+                # 使用鎖保護計數器，確保執行緒安全
+                with self.count_lock:
+                    current_count = self.count
+                    self.count += 1
+
+                file_path = os.path.join(self.path, f'{current_count}.jpg')
                 with open(file_path, 'wb') as f:
                     f.write(res.content)
-                self.count += 1
                 ret = 0
         except Exception as e:
             self.console.print(f"處理圖片檔案錯誤: {type(e).__name__}: {str(e)}")
