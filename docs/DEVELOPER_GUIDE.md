@@ -40,6 +40,7 @@ Parsing-Media-From-JVID/
 │   │
 │   ├── processors/                # 媒體處理器
 │   │   ├── __init__.py
+│   │   ├── BaseProcessor.py      # 處理器基礎類別（執行緒安全）
 │   │   ├── VideoProcessor.py     # 影片下載與處理
 │   │   └── ImageProcessor.py     # 圖片下載與處理
 │   │
@@ -284,7 +285,18 @@ class ParsingMediaLogic:
 - 隨機化 User-Agent
 - 處理網路異常
 
-### 6. VideoProcessor.py & ImageProcessor.py - 媒體處理器
+### 6. BaseProcessor.py - 處理器基礎類別
+
+**職責:**
+- 提供共用的批次下載功能
+- 執行緒安全的計數器管理
+- 可供 VideoProcessor 和 ImageProcessor 逐步採用
+
+**執行緒安全機制:**
+- 使用 `threading.Lock` 保護共享資源
+- 提供 `get_next_count()` 方法確保計數器安全
+
+### 7. VideoProcessor.py & ImageProcessor.py - 媒體處理器
 
 **職責:**
 - 下載影片/圖片
@@ -292,21 +304,26 @@ class ParsingMediaLogic:
 - 合併影片片段
 - 管理暫存檔案
 
-### 7. ContentDetector.py - 內容偵測
+**執行緒安全特性:**
+- 使用 Lock 保護檔案計數器，避免命名衝突
+- VideoProcessor: 每個執行緒建立獨立的 AES 解密器
+- 支援 1-16 個並行執行緒
+
+### 8. ContentDetector.py - 內容偵測
 
 **職責:**
 - 分析頁面結構
 - 判斷內容類型
 - 提取媒體 URL
 
-### 8. ProgressManager.py - 進度管理
+### 9. ProgressManager.py - 進度管理
 
 **職責:**
 - 記錄下載進度
 - 管理續傳狀態
 - 提供進度查詢
 
-### 9. DiagnosticMode.py - 診斷模式
+### 10. DiagnosticMode.py - 診斷模式
 
 **職責:**
 - 詳細頁面分析
