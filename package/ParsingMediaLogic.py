@@ -70,7 +70,8 @@ class ParsingMediaLogic:
         print("⚠️  未找到 cookies 文件,嘗試讀取 permissions.txt...")
         try:
             permissions_path = os.path.join(os.getcwd(), 'package', 'permissions.txt')
-            txt = [i for i in open(permissions_path, 'r')]
+            with open(permissions_path, 'r', encoding='utf-8') as f:
+                txt = list(f)
             headers = {
                 'user-agent': user_agent,
                 'authorization': txt[0].split(',')[-1].replace('\n', ''),
@@ -103,11 +104,13 @@ class ParsingMediaLogic:
         file = os.path.join(self.path, 'downloads_log.txt')
         content = f'{str(ParsingMediaLogic.utc_to_now())[:19]} | {self.url}\n'
         if not os.path.exists(file):
-            with open(file, 'w') as f:
+            with open(file, 'w', encoding='utf-8') as f:
                 f.write(content)
         else:
-            new = [i for i in open(file, 'r')] + [content]
-            open(file, 'w').write(''.join(new))
+            with open(file, 'r', encoding='utf-8') as f:
+                existing_content = f.read()
+            with open(file, 'w', encoding='utf-8') as f:
+                f.write(existing_content + content)
 
     def progress_bar(self, task: str, symbol: str='='):
         """顯示進度提示"""

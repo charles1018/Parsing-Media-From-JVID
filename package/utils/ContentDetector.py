@@ -41,8 +41,9 @@ class ContentDetector:
                     if div.get('data-src', '').startswith('https'):
                         has_image = True
                         break
-                except:
-                    pass
+                except (AttributeError, TypeError):
+                    # div 可能沒有預期的屬性，跳過此元素
+                    continue
                     
         return has_video, has_image
     
@@ -78,7 +79,8 @@ class ContentDetector:
                     # 從div中提取URL
                     m3u8_url = str(div).split('vidSrc=')[-1].split('.m3u8')[0] + '.m3u8'
                     div_urls.append(m3u8_url)
-                except:
+                except (IndexError, ValueError):
+                    # URL 解析失敗，跳過此 div
                     continue
         
         for url in div_urls:
@@ -115,7 +117,8 @@ class ContentDetector:
                 try:
                     if div.get('data-src', '').startswith('https'):
                         image_urls.append(div['data-src'])
-                except:
-                    pass
-                    
+                except (AttributeError, TypeError, KeyError):
+                    # div 可能沒有預期的屬性，跳過此元素
+                    continue
+
         return image_urls
