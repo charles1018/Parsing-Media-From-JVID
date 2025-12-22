@@ -233,29 +233,44 @@ class DiagnosticMode:
     
     def get_headers_from_main_program(self) -> Dict[str, str]:
         """
-        從主程序獲取請求頭
-        
+        從主程序獲取請求頭，使用 CookieManager 以確保與主程式一致
+
         返回:
             請求頭字典
         """
+        from package.utils.CookieManager import CookieManager
+        from package.network.NetworkManager import NetworkManager
+
+        # 優先使用 CookieManager（與主程式一致）
+        try:
+            cookie_manager = CookieManager()
+            user_agent = NetworkManager.get_random_user_agent()
+            headers = cookie_manager.get_headers(user_agent)
+
+            # 如果成功取得認證資訊，直接返回
+            if 'authorization' in headers and 'cookie' in headers:
+                return headers
+        except Exception as e:
+            print(f"[診斷] 使用 CookieManager 時發生錯誤: {str(e)}")
+
+        # 回退到舊版 permissions.txt（向後相容）
         try:
             headers_path = os.path.join(os.getcwd(), 'package', 'permissions.txt')
             if os.path.exists(headers_path):
-                txt = [i for i in open(headers_path, 'r')]
+                with open(headers_path, 'r', encoding='utf-8') as f:
+                    txt = list(f)
                 return {
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+                    'user-agent': NetworkManager.get_random_user_agent(),
                     'authorization': txt[0].split(',')[-1].replace('\n', ''),
                     'cookie': txt[1].split(',')[-1].replace('\n', ''),
                 }
-            else:
-                return {
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
-                }
         except Exception as e:
-            print(f"[診斷] 獲取請求頭時發生錯誤: {str(e)}")
-            return {
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
-            }
+            print(f"[診斷] 讀取 permissions.txt 時發生錯誤: {str(e)}")
+
+        # 最終回退：只有 User-Agent
+        return {
+            'user-agent': NetworkManager.get_random_user_agent()
+        }
     
     def suggest_extraction_strategies(self, analysis_result: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
