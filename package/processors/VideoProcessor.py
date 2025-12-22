@@ -251,12 +251,31 @@ class VideoProcessor:
     
     def remove_all_temp_files(self):
         """直接刪除所有版本的暫存檔，不詢問"""
-        # 遍歷所有版本子目錄
+        deleted_count = 0
+        failed_files = []
+
+        # 先收集所有需要刪除的檔案（避免在遍歷時修改目錄結構）
+        files_to_delete = []
         for root, dirs, files in os.walk(self.base_path):
             for dir_name in dirs:
                 if dir_name.startswith('版本_'):
                     version_path = os.path.join(root, dir_name)
-                    # 刪除該版本目錄下的暫存檔
-                    for file in [f for f in os.listdir(version_path) if f.split('.')[-1] in ['ts', 'm3u8', 'txt']]:
-                        os.remove(os.path.join(version_path, file))
-        self.console.print("已刪除所有版本的暫存檔")
+                    try:
+                        for file in os.listdir(version_path):
+                            if file.split('.')[-1] in ['ts', 'm3u8', 'txt']:
+                                files_to_delete.append(os.path.join(version_path, file))
+                    except OSError as e:
+                        self.console.print(f"列舉目錄時出錯 {version_path}: {e}")
+
+        # 刪除檔案
+        for file_path in files_to_delete:
+            try:
+                os.remove(file_path)
+                deleted_count += 1
+            except OSError as e:
+                self.console.print(f"刪除檔案失敗 {file_path}: {e}")
+                failed_files.append(file_path)
+
+        self.console.print(f"已刪除 {deleted_count} 個暫存檔")
+        if failed_files:
+            self.console.print(f"警告: {len(failed_files)} 個檔案無法刪除")
