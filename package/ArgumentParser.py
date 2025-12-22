@@ -47,7 +47,23 @@ class AP:
                            help=f"specify the number of threads to use (default: {default_threads}) | ex: 3",
                            default=default_threads, type=int)
 
-        return parse.parse_args()
+        args = parse.parse_args()
+
+        # 驗證 URL 參數（除非只是添加工作示例）
+        if not args.working_url:
+            if not args.url or not args.url.strip():
+                parse.error("URL 參數 (-u) 為必填項，請提供有效的 JVID URL")
+            if not args.url.startswith('http'):
+                parse.error("URL 必須以 http:// 或 https:// 開頭")
+
+        # 驗證執行緒數
+        if args.threads < 1:
+            parse.error("執行緒數必須至少為 1")
+        if args.threads > 16:
+            print(f"警告: 執行緒數 {args.threads} 過高，已自動調整為 16")
+            args.threads = 16
+
+        return args
 
     def config_once(self):
         args = AP.parse_args()
