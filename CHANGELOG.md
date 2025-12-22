@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔧 程式碼品質改進 (2025-12-22)
+
+#### Fixed
+- 🐛 **執行緒安全問題修復**
+  - VideoProcessor: 使用 Lock 保護計數器，避免多執行緒下檔案命名衝突
+  - VideoProcessor: 每個執行緒建立獨立的 AES 解密器，避免解密狀態混亂
+  - ImageProcessor: 使用 Lock 保護計數器，確保圖片編號不重複
+  - 現在可以安全地使用 `-n` 參數設定多執行緒數量
+
+- 🔒 **DiagnosticMode 認證處理**
+  - 改用 CookieManager 取得認證頭，與主程式保持一致
+  - 保留 permissions.txt 作為向後相容的回退機制
+
+- 📝 **錯誤處理改進**
+  - ContentDetector: 將空 except 區塊改為捕獲具體異常類型
+  - 添加說明性註解解釋為何可以安全忽略這些錯誤
+
+- 💧 **資源洩漏修復**
+  - ParsingMediaLogic: 修復 update_headers() 和 log_record() 中檔案未關閉問題
+  - 統一使用 with 語句確保資源正確釋放
+  - 添加 encoding='utf-8' 確保跨平台相容性
+
+- 🗑️ **檔案清理邏輯改進**
+  - VideoProcessor: 先收集所有待刪除檔案再執行刪除
+  - 添加錯誤處理，捕獲並報告刪除失敗的檔案
+  - 顯示刪除統計資訊
+
+#### Added
+- ✨ **命令列參數驗證**
+  - URL 參數驗證：必填項檢查、URL 格式檢查
+  - 執行緒數驗證：最小值 1，最大值 16（超過自動調整）
+  - 添加工作示例時可跳過 URL 驗證
+
+- 🏗️ **BaseProcessor 基礎類別**
+  - 新增共用的批次下載功能
+  - 提供執行緒安全的計數器方法
+  - 可供 VideoProcessor 和 ImageProcessor 未來逐步採用
+
+---
+
 ### 🐳 Docker 優化 (2025-11-13)
 
 #### Added
