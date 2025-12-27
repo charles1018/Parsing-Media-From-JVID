@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 測試路徑修復 - 驗證所有路徑都使用 os.path.join()
 """
@@ -19,7 +18,7 @@ def check_hardcoded_backslashes(file_path):
     """檢查文件中是否有硬編碼的反斜線"""
     issues = []
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         lines = f.readlines()
 
     # 檢測模式：

@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
 內容偵測器 - 負責檢測頁面的內容類型和提取媒體URL
 """
 
-from bs4 import BeautifulSoup
 import re
+
+from bs4 import BeautifulSoup
 
 
 class ContentDetector:

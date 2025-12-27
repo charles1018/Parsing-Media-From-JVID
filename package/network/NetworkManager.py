@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
 網路管理器 - 負責處理所有網路請求和重試邏輯
 """
 
-import time
 import random
+import time
+
 import requests
 
 

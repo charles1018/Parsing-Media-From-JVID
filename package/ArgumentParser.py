@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
 """
 
-from argparse import ArgumentParser, Namespace
 import os
+from argparse import ArgumentParser, Namespace
 
 
 class AP:
@@ -119,7 +118,7 @@ class AP:
         # 檢查URL是否已存在
         existing_urls = []
         if os.path.exists(examples_file):
-            with open(examples_file, "r") as f:
+            with open(examples_file) as f:
                 existing_urls = [line.strip() for line in f if line.strip()]
 
         if url not in existing_urls:

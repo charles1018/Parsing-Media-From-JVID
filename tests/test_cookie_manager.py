@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 """
 Cookie Manager 單元測試
 使用 pytest 框架測試 CookieManager 的各項功能
 """
 
 import json
-import pytest
 from pathlib import Path
 
-from package.utils.CookieManager import CookieManager
+import pytest
+
 from package.network.NetworkManager import NetworkManager
+from package.utils.CookieManager import CookieManager
 
 
 class TestCookieManager:

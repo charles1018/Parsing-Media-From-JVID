@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: Diagnostic Module
 Create Time: 2025-03-22
@@ -6,17 +5,18 @@ Create Time: 2025-03-22
 診斷模式模組 - 用於分析難以解析的頁面結構
 """
 
-import os
 import json
+import os
 import time
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
 import requests
 from bs4 import BeautifulSoup
-from typing import TYPE_CHECKING, Dict, List, Any, Optional
 
 if TYPE_CHECKING:
     from package.network.NetworkManager import NetworkManager
-from urllib.parse import urlparse
 import re
+from urllib.parse import urlparse
 
 
 class DiagnosticMode:
@@ -282,8 +282,8 @@ class DiagnosticMode:
         返回:
             請求頭字典
         """
-        from package.utils.CookieManager import CookieManager
         from package.network.NetworkManager import NetworkManager
+        from package.utils.CookieManager import CookieManager
 
         # 優先使用 CookieManager（與主程式一致）
         try:
@@ -301,7 +301,7 @@ class DiagnosticMode:
         try:
             headers_path = os.path.join(os.getcwd(), "package", "permissions.txt")
             if os.path.exists(headers_path):
-                with open(headers_path, "r", encoding="utf-8") as f:
+                with open(headers_path, encoding="utf-8") as f:
                     txt = list(f)
                 return {
                     "user-agent": NetworkManager.get_random_user_agent(),
@@ -452,7 +452,7 @@ class DiagnosticMode:
                     data = json.loads(fixed_json)
 
                     # 在數據中尋找URL
-                    for key, value in data.items():
+                    for _key, value in data.items():
                         if isinstance(value, str) and (
                             value.endswith(".m3u8") or value.endswith(".mp4")
                         ):
@@ -535,7 +535,7 @@ class DiagnosticMode:
             # 讀取指定會話的診斷數據
             save_path = os.path.join(self.base_path, f"diagnostic_{session_id}.json")
             if os.path.exists(save_path):
-                with open(save_path, "r", encoding="utf-8") as f:
+                with open(save_path, encoding="utf-8") as f:
                     data = json.load(f)
             else:
                 return f"找不到會話ID: {session_id} 的診斷數據"
@@ -620,7 +620,7 @@ class DiagnosticMode:
             return failed_urls
 
         try:
-            with open(log_path, "r", encoding="utf-8") as f:
+            with open(log_path, encoding="utf-8") as f:
                 for line in f:
                     if "下載失敗" in line and "URL:" in line:
                         url_part = line.split("URL:")[-1].strip()

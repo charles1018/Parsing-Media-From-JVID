@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Cookie Manager - 自動讀取和管理 JVID cookies
 @author: Charles
@@ -6,8 +5,8 @@ Cookie Manager - 自動讀取和管理 JVID cookies
 """
 
 import json
-from typing import Dict, Optional, Tuple
 from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 
 class CookieManager:
@@ -65,7 +64,7 @@ class CookieManager:
             return None
 
         try:
-            with open(cookie_file, "r", encoding="utf-8") as f:
+            with open(cookie_file, encoding="utf-8") as f:
                 cookies = json.load(f)
             return cookies
         except Exception as e:

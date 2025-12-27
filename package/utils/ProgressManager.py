@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
 進度管理器 - 負責管理下載進度的保存和恢復
 """
 
-import os
 import json
-from datetime import datetime, timezone, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 
 
 class ProgressManager:
@@ -77,7 +76,7 @@ class ProgressManager:
             return None
 
         try:
-            with open(progress_file, "r", encoding="utf-8") as f:
+            with open(progress_file, encoding="utf-8") as f:
                 progress_data = json.load(f)
 
             # 檢查URL是否一致，確保是同一下載任務
@@ -118,7 +117,7 @@ class ProgressManager:
             return None
 
         try:
-            with open(progress_file, "r", encoding="utf-8") as f:
+            with open(progress_file, encoding="utf-8") as f:
                 progress_data = json.load(f)
 
             # 檢查URL是否一致

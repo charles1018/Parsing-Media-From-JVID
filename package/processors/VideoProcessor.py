@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
@@ -6,11 +5,12 @@ Update Time: 2025-03-22
 """
 
 import os
-import subprocess
-from subprocess import PIPE, STDOUT
-from Crypto.Cipher import AES
 import random
+import subprocess
 import time
+from subprocess import PIPE, STDOUT
+
+from Crypto.Cipher import AES
 
 from .BaseProcessor import BaseProcessor
 
@@ -81,7 +81,8 @@ class VideoProcessor(BaseProcessor):
                 f.write(res.text)
 
             # 讀取 m3u8 密鑰 & 目標清單
-            media = [i for i in open(os.path.join(version_path, "media.m3u8"), "r")]
+            with open(os.path.join(version_path, "media.m3u8")) as f:
+                media = list(f)
 
             # 查找並解析密鑰行
             key_lines = [i for i in media if "#EXT-X-KEY" in i]
@@ -113,7 +114,8 @@ class VideoProcessor(BaseProcessor):
             self.aes_key = res.content
 
             # 準備下載分段列表
-            media = [i for i in open(os.path.join(version_path, "media.m3u8"), "r")]
+            with open(os.path.join(version_path, "media.m3u8")) as f:
+                media = list(f)
             self.todo_list = [
                 self.base_url + i
                 for i in "".join(media).split("\n")
@@ -221,7 +223,7 @@ class VideoProcessor(BaseProcessor):
                 print(line)
             except UnicodeDecodeError:
                 pass
-            except IOError as e:
+            except OSError as e:
                 print(e)
 
         output_path = os.path.join(self.base_path, output_name)
@@ -234,7 +236,7 @@ class VideoProcessor(BaseProcessor):
 
         # 先收集所有需要刪除的檔案（避免在遍歷時修改目錄結構）
         files_to_delete = []
-        for root, dirs, files in os.walk(self.base_path):
+        for root, dirs, _files in os.walk(self.base_path):
             for dir_name in dirs:
                 if dir_name.startswith("版本_"):
                     version_path = os.path.join(root, dir_name)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
@@ -7,18 +6,19 @@ Update Time: 2025-03-22
 解碼參考來源: https://cloud.tencent.com/developer/article/2258872
 """
 
-from datetime import datetime, timezone, timedelta
 import os
+from datetime import datetime, timedelta, timezone
+
 from bs4 import BeautifulSoup
 from rich.console import Console
 
-from package.network.NetworkManager import NetworkManager
-from package.processors.VideoProcessor import VideoProcessor
-from package.processors.ImageProcessor import ImageProcessor
-from package.utils.ContentDetector import ContentDetector
-from package.utils.ProgressManager import ProgressManager
-from package.utils.CookieManager import CookieManager
 from package.DiagnosticMode import DiagnosticMode
+from package.network.NetworkManager import NetworkManager
+from package.processors.ImageProcessor import ImageProcessor
+from package.processors.VideoProcessor import VideoProcessor
+from package.utils.ContentDetector import ContentDetector
+from package.utils.CookieManager import CookieManager
+from package.utils.ProgressManager import ProgressManager
 
 
 class ParsingMediaLogic:
@@ -75,7 +75,7 @@ class ParsingMediaLogic:
         print("⚠️  未找到 cookies 文件,嘗試讀取 permissions.txt...")
         try:
             permissions_path = os.path.join(os.getcwd(), "package", "permissions.txt")
-            with open(permissions_path, "r", encoding="utf-8") as f:
+            with open(permissions_path, encoding="utf-8") as f:
                 txt = list(f)
             headers = {
                 "user-agent": user_agent,
@@ -112,7 +112,7 @@ class ParsingMediaLogic:
             with open(file, "w", encoding="utf-8") as f:
                 f.write(content)
         else:
-            with open(file, "r", encoding="utf-8") as f:
+            with open(file, encoding="utf-8") as f:
                 existing_content = f.read()
             with open(file, "w", encoding="utf-8") as f:
                 f.write(existing_content + content)
@@ -208,7 +208,7 @@ class ParsingMediaLogic:
                 os.path.dirname(self.path), "working_examples.txt"
             )
             if os.path.exists(working_urls_file):
-                with open(working_urls_file, "r") as f:
+                with open(working_urls_file) as f:
                     working_urls = [line.strip() for line in f if line.strip()]
 
                 if working_urls:

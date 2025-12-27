@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 JVID 媒體下載工具
 ==================
@@ -62,8 +61,8 @@ Update Time: 2024-12-15
 - 開發指南：DEVELOPER_GUIDE.md
 """
 
-from package.ParsingMediaLogic import ParsingMediaLogic
 from package.ArgumentParser import AP
+from package.ParsingMediaLogic import ParsingMediaLogic
 
 
 class Entry:

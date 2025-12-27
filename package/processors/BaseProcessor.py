@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: PC
 Update Time: 2025-03-22
@@ -7,10 +6,11 @@ Update Time: 2025-03-22
 
 import random
 import time
-from threading import Lock
 from abc import ABC, abstractmethod
-from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+
+from tqdm import tqdm
 
 
 class BaseProcessor(ABC):
