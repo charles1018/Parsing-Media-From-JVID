@@ -7,34 +7,36 @@ Update Time: 2025-03-22
 import os
 import subprocess
 from subprocess import PIPE, STDOUT
-from threading import Lock
 from Crypto.Cipher import AES
 import random
 import time
-from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-class VideoProcessor:
+from .BaseProcessor import BaseProcessor
+
+
+class VideoProcessor(BaseProcessor):
+    """影片處理器，繼承自 BaseProcessor"""
+
+    # 批次處理常數
+    BATCH_SIZE = 100
+    DELAY_MIN = 0.1
+    DELAY_MAX = 0.3
+
     def __init__(self, network_manager, base_path, console, auto_resume=False):
         """
         初始化影片處理器
-        
+
         參數:
             network_manager: 網路管理器物件
             base_path: 基本下載路徑
             console: 控制台物件
             auto_resume: 是否自動恢復下載
         """
-        self.network_manager = network_manager
-        self.base_path = base_path
-        self.console = console
+        super().__init__(network_manager, base_path, console)
+        self.base_path = base_path  # 保留 base_path 別名以保持向後相容
         self.auto_resume = auto_resume
         self.aes_key = None  # 儲存 AES 金鑰，用於執行緒安全的解密
         self.base_url = None
-        self.todo_list = []
-        self.count = 0
-        self.count_lock = Lock()  # 保護計數器的執行緒鎖
-        self.MAX_WORKERS = 1  # 預設使用單執行緒以確保下載完整性
         self.download_active = True
         self.paused = False
     
@@ -142,49 +144,28 @@ class VideoProcessor:
         
         return success_count
     
-    def download_ts_segments(self):
-        """下載所有TS分段"""
-        # 使用設定的執行緒數量（已通過 Lock 確保執行緒安全）
-        current_workers = self.MAX_WORKERS
-
-        self.console.print(f"開始下載，執行緒數: {current_workers}")
-        
-        # 創建進度條
-        schedule = tqdm(total=len(self.todo_list), desc='Downloads Schedule: ')
-        
-        # 批次處理，避免一次提交所有任務導致記憶體問題
-        todo_chunks = [self.todo_list[i:i+100] for i in range(0, len(self.todo_list), 100)]
-        
-        for chunk_index, current_chunk in enumerate(todo_chunks):
-            with ThreadPoolExecutor(max_workers=current_workers) as executor:
-                # 提交當前批次的任務
-                future_to_url = {executor.submit(self.create_ts_media, url): url for url in current_chunk}
-                
-                # 處理完成的任務
-                for future in as_completed(future_to_url):
-                    url = future_to_url[future]
-                    try:
-                        # 獲取任務結果
-                        ret = future.result(timeout=20)
-                        if ret == 0:  # 成功
-                            schedule.update(1)
-                    except Exception as e:
-                        self.console.print(f"處理任務時出錯: {type(e).__name__}: {str(e)}")
-            
-            # 顯示批次完成情況
-            if chunk_index < len(todo_chunks) - 1:
-                self.console.print(f"批次 {chunk_index+1}/{len(todo_chunks)} 完成")
-                # 批次之間的間隔，模擬人類瀏覽行為，增加冷卻時間避免被封鎖
-                wait_time = random.uniform(1.0, 3.0)
-                self.console.print(f"休息 {wait_time:.1f} 秒以避免限流...")
-                time.sleep(wait_time)
-        
-        # 完成進度條            
-        schedule.close()
-    
-    def create_ts_media(self, url):
+    def process(self, urls):
         """
-        下載並解密 TS 分段檔案
+        實作抽象方法 - 處理影片下載
+
+        參數:
+            urls: 包含 (video_urls, video_types) 的元組
+        """
+        video_urls, video_types = urls
+        self.process_video_urls(video_urls, video_types)
+
+    def download_ts_segments(self):
+        """下載所有TS分段，使用基礎類別的批次下載功能"""
+        self.batch_download(
+            todo_list=self.todo_list,
+            download_func=self._download_single_ts,
+            batch_size=self.BATCH_SIZE,
+            desc='Downloads Schedule'
+        )
+    
+    def _download_single_ts(self, url):
+        """
+        下載並解密單個 TS 分段檔案（供 batch_download 調用）
 
         參數:
             url: TS 分段的 URL
@@ -192,18 +173,15 @@ class VideoProcessor:
         返回:
             成功返回 0，失敗返回 -1
         """
-        ret = -1
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(self.DELAY_MIN, self.DELAY_MAX))
 
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                # 使用鎖保護計數器，確保執行緒安全
-                with self.count_lock:
-                    current_count = self.count
-                    self.count += 1
+                # 使用基礎類別的執行緒安全計數器
+                current_count = self.get_next_count()
 
                 # 每個執行緒建立自己的 AES 解密器（AES Cipher 不是執行緒安全的）
                 cryptor = AES.new(self.aes_key, AES.MODE_CBC)
@@ -212,10 +190,10 @@ class VideoProcessor:
                 ts_file_path = os.path.join(self.base_path, f"{current_count}.ts")
                 with open(ts_file_path, 'wb') as f:
                     f.write(decrypted_data)
-                ret = 0
+                return 0
         except Exception as e:
             self.console.print(f"處理 TS 檔案錯誤: {type(e).__name__}: {str(e)}")
-        return ret
+        return -1
     
     def combine_ts_to_mp4(self):
         """合併 TS 文件為 MP4"""
