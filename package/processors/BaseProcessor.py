@@ -15,6 +15,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class BaseProcessor(ABC):
     """處理器基礎類別，提供共用的批次下載功能"""
 
+    # 執行緒和批次處理常數
+    DEFAULT_MAX_WORKERS = 1
+    DEFAULT_BATCH_SIZE = 100
+    TASK_TIMEOUT = 20
+
+    # 批次間隔常數
+    BATCH_WAIT_MIN = 1.0
+    BATCH_WAIT_MAX = 3.0
+
     def __init__(self, network_manager, path, console):
         """
         初始化基礎處理器
@@ -30,18 +39,21 @@ class BaseProcessor(ABC):
         self.count = 0
         self.count_lock = Lock()  # 保護計數器的執行緒鎖
         self.todo_list = []
-        self.MAX_WORKERS = 1  # 預設使用單執行緒
+        self.MAX_WORKERS = self.DEFAULT_MAX_WORKERS
 
-    def batch_download(self, todo_list, download_func, batch_size=100, desc='下載進度'):
+    def batch_download(self, todo_list, download_func, batch_size=None, desc='下載進度'):
         """
         通用批次下載邏輯
 
         參數:
             todo_list: 待下載項目列表
             download_func: 下載單個項目的函數
-            batch_size: 每批次處理的數量
+            batch_size: 每批次處理的數量（預設使用 DEFAULT_BATCH_SIZE）
             desc: 進度條描述文字
         """
+        if batch_size is None:
+            batch_size = self.DEFAULT_BATCH_SIZE
+
         # 使用設定的執行緒數量
         current_workers = self.MAX_WORKERS
 
@@ -62,7 +74,7 @@ class BaseProcessor(ABC):
                 for future in as_completed(future_to_item):
                     try:
                         # 獲取任務結果
-                        ret = future.result(timeout=20)
+                        ret = future.result(timeout=self.TASK_TIMEOUT)
                         if ret == 0:  # 成功
                             schedule.update(1)
                     except Exception as e:
@@ -72,7 +84,7 @@ class BaseProcessor(ABC):
             if chunk_index < len(todo_chunks) - 1:
                 self.console.print(f"批次 {chunk_index + 1}/{len(todo_chunks)} 完成")
                 # 批次之間的間隔，模擬人類瀏覽行為
-                wait_time = random.uniform(1.0, 3.0)
+                wait_time = random.uniform(self.BATCH_WAIT_MIN, self.BATCH_WAIT_MAX)
                 self.console.print(f"休息 {wait_time:.1f} 秒以避免限流...")
                 time.sleep(wait_time)
 
