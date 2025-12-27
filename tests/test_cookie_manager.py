@@ -1,139 +1,144 @@
 # -*- coding: utf-8 -*-
 """
-Cookie Manager 測試腳本
-用於驗證 Cookie 載入和解析功能
+Cookie Manager 單元測試
+使用 pytest 框架測試 CookieManager 的各項功能
 """
-import sys
+import json
+import pytest
 from pathlib import Path
-
-# 添加專案路徑
-sys.path.insert(0, str(Path(__file__).parent))
 
 from package.utils.CookieManager import CookieManager
 from package.network.NetworkManager import NetworkManager
 
 
-def test_cookie_manager():
-    """測試 CookieManager 的各項功能"""
-    
-    print("=" * 60)
-    print("Cookie Manager 功能測試")
-    print("=" * 60)
-    
-    # 初始化 CookieManager
-    cookie_manager = CookieManager()
-    
-    # 測試 1: 尋找 cookie 文件
-    print("\n[測試 1] 尋找 Cookie 文件")
-    print("-" * 60)
-    cookie_file = cookie_manager.find_cookie_file()
-    if cookie_file:
-        print(f"[OK] 找到 Cookie 文件: {cookie_file}")
-    else:
-        print("[FAIL] 未找到 Cookie 文件")
-        print("支援的文件名稱:")
-        for filename in CookieManager.COOKIE_FILENAMES:
-            print(f"  - {filename}")
-        return False
-    
-    # 測試 2: 載入 cookies
-    print("\n[測試 2] 載入 Cookies")
-    print("-" * 60)
-    cookies = cookie_manager.load_cookies()
-    if cookies:
-        print(f"[OK] 成功載入 {len(cookies)} 個 cookies")
-        
-        # 顯示 cookie 名稱
-        cookie_names = [c.get('name') for c in cookies if c.get('name')]
-        print(f"Cookie 名稱: {', '.join(cookie_names[:5])}")
-        if len(cookie_names) > 5:
-            print(f"  ...以及其他 {len(cookie_names) - 5} 個")
-    else:
-        print("[FAIL] 載入 Cookies 失敗")
-        return False
-    
-    # 測試 3: 提取認證資訊
-    print("\n[測試 3] 提取認證資訊")
-    print("-" * 60)
-    auth_token, cookie_string = cookie_manager.extract_auth_info(cookies)
-    
-    if auth_token:
-        # 只顯示 token 的開頭和結尾
-        display_token = f"{auth_token[:30]}...{auth_token[-20:]}" if len(auth_token) > 50 else auth_token
-        print(f"[OK] Authorization Token: {display_token}")
-    else:
-        print("[WARN] 未找到 Authorization Token")
-    
-    if cookie_string:
-        cookie_count = len(cookie_string.split('; '))
-        print(f"[OK] Cookie 字串: 包含 {cookie_count} 個 cookies")
-    else:
-        print("[FAIL] 無法構建 Cookie 字串")
-    
-    # 測試 4: 獲取完整請求頭
-    print("\n[測試 4] 生成請求頭")
-    print("-" * 60)
-    user_agent = NetworkManager.get_random_user_agent()
-    headers = cookie_manager.get_headers(user_agent)
-    
-    print("請求頭內容:")
-    for key, value in headers.items():
-        if key == 'authorization' and value:
-            display_value = f"{value[:30]}...{value[-20:]}" if len(value) > 50 else value
-            print(f"  {key}: {display_value}")
-        elif key == 'cookie' and value:
-            cookie_count = len(value.split('; '))
-            print(f"  {key}: [包含 {cookie_count} 個 cookies]")
-        else:
-            print(f"  {key}: {value[:50]}...")
-    
-    # 測試 5: 輸出摘要
-    print("\n" + "=" * 60)
-    print("測試摘要")
-    print("=" * 60)
-    
-    # 簡化版的摘要輸出
-    has_auth = 'authorization' in headers and headers['authorization']
-    has_cookie = 'cookie' in headers and headers['cookie']
-    
-    if has_auth:
-        print("[OK] Authorization: 已設定")
-    else:
-        print("[WARN] Authorization: 未設定")
-    
-    if has_cookie:
-        cookie_count = len(headers['cookie'].split('; '))
-        print(f"[OK] Cookies: 已載入 {cookie_count} 個 cookies")
-    else:
-        print("[WARN] Cookies: 未設定")
-    
-    return True
+class TestCookieManager:
+    """CookieManager 測試類別"""
+
+    @pytest.fixture
+    def sample_cookies(self):
+        """提供測試用的 cookie 資料"""
+        return [
+            {
+                "name": "session_id",
+                "value": "abc123",
+                "domain": ".jvid.com",
+                "path": "/",
+            },
+            {
+                "name": "auth_token",
+                "value": "test_auth_token_value",
+                "domain": ".jvid.com",
+                "path": "/",
+            },
+            {
+                "name": "user_pref",
+                "value": "dark_mode",
+                "domain": ".jvid.com",
+                "path": "/",
+            },
+        ]
+
+    @pytest.fixture
+    def cookie_file(self, tmp_path, sample_cookies):
+        """建立臨時 cookie 檔案"""
+        cookie_path = tmp_path / "www.jvid.com_cookies.json"
+        cookie_path.write_text(json.dumps(sample_cookies), encoding="utf-8")
+        return cookie_path
+
+    @pytest.fixture
+    def cookie_manager(self, tmp_path, cookie_file, monkeypatch):
+        """建立設定好的 CookieManager"""
+        # 將工作目錄切換到包含 cookie 檔案的目錄
+        monkeypatch.chdir(tmp_path)
+        return CookieManager()
+
+    def test_find_cookie_file_exists(self, cookie_manager, cookie_file):
+        """測試能找到存在的 cookie 檔案"""
+        found_file = cookie_manager.find_cookie_file()
+        assert found_file is not None
+        assert Path(found_file).name == "www.jvid.com_cookies.json"
+
+    def test_find_cookie_file_not_exists(self, tmp_path, monkeypatch):
+        """測試找不到 cookie 檔案時返回 None"""
+        # 使用空目錄
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        monkeypatch.chdir(empty_dir)
+
+        manager = CookieManager()
+        found_file = manager.find_cookie_file()
+        assert found_file is None
+
+    def test_load_cookies_success(self, cookie_manager, sample_cookies):
+        """測試成功載入 cookies"""
+        cookies = cookie_manager.load_cookies()
+        assert cookies is not None
+        assert len(cookies) == len(sample_cookies)
+        assert cookies[0]["name"] == "session_id"
+
+    def test_load_cookies_invalid_json(self, tmp_path, monkeypatch):
+        """測試載入無效 JSON 時的處理"""
+        invalid_cookie_path = tmp_path / "www.jvid.com_cookies.json"
+        invalid_cookie_path.write_text("invalid json {", encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        manager = CookieManager()
+        cookies = manager.load_cookies()
+        # 應該返回空列表或 None
+        assert cookies is None or len(cookies) == 0
+
+    def test_extract_auth_info(self, cookie_manager, sample_cookies):
+        """測試提取認證資訊"""
+        auth_token, cookie_string = cookie_manager.extract_auth_info(sample_cookies)
+
+        # 驗證 cookie 字串包含所有 cookies
+        assert cookie_string is not None
+        assert "session_id=abc123" in cookie_string
+        assert "auth_token=test_auth_token_value" in cookie_string
+
+    def test_extract_auth_info_empty_cookies(self, cookie_manager):
+        """測試空 cookies 列表"""
+        auth_token, cookie_string = cookie_manager.extract_auth_info([])
+        # 空列表應該返回空值
+        assert cookie_string == "" or cookie_string is None
+
+    def test_get_headers(self, cookie_manager, sample_cookies, monkeypatch):
+        """測試生成請求頭"""
+        # 載入 cookies
+        cookie_manager.load_cookies()
+
+        user_agent = NetworkManager.get_random_user_agent()
+        headers = cookie_manager.get_headers(user_agent)
+
+        assert headers is not None
+        assert "user-agent" in headers
+        assert headers["user-agent"] == user_agent
+
+    def test_cookie_filenames_constant(self):
+        """測試支援的 cookie 檔名常數"""
+        assert hasattr(CookieManager, "COOKIE_FILENAMES")
+        assert isinstance(CookieManager.COOKIE_FILENAMES, (list, tuple))
+        assert len(CookieManager.COOKIE_FILENAMES) > 0
+        assert "www.jvid.com_cookies.json" in CookieManager.COOKIE_FILENAMES
 
 
-def main():
-    """主函式"""
-    try:
-        success = test_cookie_manager()
-        
-        if success:
-            print("\n[SUCCESS] 所有測試通過！Cookie Manager 運作正常。")
-            print("\n提示: 你現在可以使用以下命令開始下載:")
-            print('   uv run python Entry.py -u "https://www.jvid.com/v/[PAGE_ID]"')
-            return 0
-        else:
-            print("\n[FAIL] 測試失敗！請檢查 Cookie 文件是否存在且格式正確。")
-            print("\n請確保:")
-            print("   1. Cookie 文件位於專案根目錄")
-            print("   2. 文件名為 www.jvid.com_cookies.json")
-            print("   3. JSON 格式正確")
-            return 1
-            
-    except Exception as e:
-        print(f"\n[ERROR] 測試過程中發生錯誤: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+class TestNetworkManagerUserAgent:
+    """NetworkManager User-Agent 相關測試"""
 
+    def test_get_random_user_agent_not_empty(self):
+        """測試取得的 User-Agent 不為空"""
+        user_agent = NetworkManager.get_random_user_agent()
+        assert user_agent is not None
+        assert len(user_agent) > 0
 
-if __name__ == '__main__':
-    sys.exit(main())
+    def test_get_random_user_agent_is_string(self):
+        """測試取得的 User-Agent 是字串"""
+        user_agent = NetworkManager.get_random_user_agent()
+        assert isinstance(user_agent, str)
+
+    def test_get_random_user_agent_contains_browser_info(self):
+        """測試 User-Agent 包含瀏覽器資訊"""
+        user_agent = NetworkManager.get_random_user_agent()
+        # 應該包含常見的瀏覽器標識
+        browser_keywords = ["Mozilla", "Chrome", "Safari", "Firefox", "Edge"]
+        assert any(keyword in user_agent for keyword in browser_keywords)
