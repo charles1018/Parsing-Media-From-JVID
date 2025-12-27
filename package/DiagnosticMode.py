@@ -171,15 +171,17 @@ class DiagnosticMode:
             status = "成功" if result.get("success", False) else "失敗"
             print(f"[診斷] URL提取嘗試 '{method_name}' {status}")
     
-    def compare_with_working_examples(self, working_urls: List[str], 
-                                     current_html: str) -> Dict[str, Any]:
+    def compare_with_working_examples(self, working_urls: List[str],
+                                     current_html: str,
+                                     network_manager: Optional['NetworkManager'] = None) -> Dict[str, Any]:
         """
         將當前頁面與已知工作的例子進行比較
-        
+
         參數:
             working_urls: 已知可以正常解析的URL列表
             current_html: 當前頁面的HTML
-            
+            network_manager: 可選的 NetworkManager 實例，用於發送請求
+
         返回:
             包含比較結果的字典
         """
@@ -188,27 +190,31 @@ class DiagnosticMode:
             "structure_differences": [],
             "pattern_differences": {}
         }
-        
+
         # 如果沒有提供可工作的例子，則無法比較
         if not working_urls:
             comparison_result["error"] = "沒有提供可比較的工作URL"
             return comparison_result
-        
-        # 獲取診斷模式使用的會話
-        session = requests.Session()
-        headers = self.get_headers_from_main_program()
-        
+
         # 分析當前頁面的模式
         current_patterns = self.analyze_page_structure(current_html)["patterns_found"]
-        
+
         # 嘗試獲取一個工作例子並分析
         for working_url in working_urls[:1]:  # 只取第一個工作URL進行比較
             try:
-                response = session.get(working_url, headers=headers, timeout=20)
-                if response.status_code == 200:
+                # 使用 NetworkManager 發送請求（如果提供）
+                if network_manager:
+                    response = network_manager.request_with_retry(working_url)
+                else:
+                    # 回退到直接使用 requests（向後相容）
+                    from package.network.NetworkManager import NetworkManager as NM
+                    headers = self.get_headers_from_main_program()
+                    response = requests.get(working_url, headers=headers, timeout=20)
+
+                if response and response.status_code == 200:
                     working_html = response.text
                     working_patterns = self.analyze_page_structure(working_html)["patterns_found"]
-                    
+
                     # 比較模式差異
                     for pattern_type in working_patterns:
                         if pattern_type in current_patterns:
@@ -224,11 +230,13 @@ class DiagnosticMode:
                                     "working_example": working_patterns[pattern_type],
                                     "current_page": current_patterns[pattern_type]
                                 }
-                else:
+                elif response:
                     comparison_result["error"] = f"無法獲取工作URL: HTTP {response.status_code}"
+                else:
+                    comparison_result["error"] = "無法獲取工作URL: 請求失敗"
             except Exception as e:
                 comparison_result["error"] = f"比較過程發生錯誤: {str(e)}"
-        
+
         return comparison_result
     
     def get_headers_from_main_program(self) -> Dict[str, str]:
