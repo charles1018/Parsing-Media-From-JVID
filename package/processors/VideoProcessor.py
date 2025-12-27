@@ -200,30 +200,32 @@ class VideoProcessor(BaseProcessor):
         # 提取當前處理的版本名稱
         folder_name = os.path.basename(self.base_path)
         output_name = "media.mp4"
-        
+
         # 如果是版本目錄，使用自定義名稱
         if folder_name.startswith('版本_'):
             output_name = folder_name + ".mp4"
-        
-        cmdline = f'ffmpeg -f concat -i media.txt -c copy {output_name}'
-        self.console.print(f"執行合併命令: {cmdline}")
-        
-        pop = subprocess.Popen(cmdline,
-                              stdout=PIPE,
-                              stderr=STDOUT,
-                              cwd=self.base_path,
-                              shell=True)
+
+        # 使用列表形式傳遞命令，避免 shell=True 的安全風險
+        cmd = ['ffmpeg', '-f', 'concat', '-i', 'media.txt', '-c', 'copy', output_name]
+        self.console.print(f"執行合併命令: {' '.join(cmd)}")
+
+        pop = subprocess.Popen(
+            cmd,
+            stdout=PIPE,
+            stderr=STDOUT,
+            cwd=self.base_path
+        )
 
         while pop.poll() is None:
             line = pop.stdout.readline()
             try:
                 line = line.decode('utf8')
                 print(line)
-            except UnicodeDecodeError as e:
+            except UnicodeDecodeError:
                 pass
             except IOError as e:
                 print(e)
-                
+
         output_path = os.path.join(self.base_path, output_name)
         self.console.print(f"合併完成: {output_path}")
     
