@@ -4,6 +4,7 @@
 Update Time: 2025-03-22
 圖片處理器 - 負責處理圖片的下載
 """
+
 import os
 import random
 import time
@@ -29,7 +30,7 @@ class ImageProcessor(BaseProcessor):
             console: 控制台物件
         """
         super().__init__(network_manager, path, console)
-    
+
     def process(self, urls):
         """
         實作抽象方法 - 處理圖片下載
@@ -63,7 +64,7 @@ class ImageProcessor(BaseProcessor):
             todo_list=self.todo_list,
             download_func=self._download_single_image,
             batch_size=self.BATCH_SIZE,
-            desc='圖片下載進度'
+            desc="圖片下載進度",
         )
 
         self.console.print(f"圖片下載完成，共下載 {self.count} 張圖片")
@@ -89,11 +90,10 @@ class ImageProcessor(BaseProcessor):
                 # 使用基礎類別的執行緒安全計數器
                 current_count = self.get_next_count()
 
-                file_path = os.path.join(self.path, f'{current_count}.jpg')
-                with open(file_path, 'wb') as f:
+                file_path = os.path.join(self.path, f"{current_count}.jpg")
+                with open(file_path, "wb") as f:
                     f.write(res.content)
                 return 0
         except Exception as e:
             self.console.print(f"處理圖片檔案錯誤: {type(e).__name__}: {str(e)}")
         return -1
-    

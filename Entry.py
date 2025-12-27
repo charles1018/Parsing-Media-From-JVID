@@ -12,10 +12,10 @@ Update Time: 2024-12-15
 1. 便捷腳本（最簡單，推薦新手）:
    Windows CMD:
      jvid-download.bat "https://www.jvid.com/v/[PAGE_ID]"
-   
+
    Windows PowerShell:
      .\\jvid-download.ps1 -Url "https://www.jvid.com/v/[PAGE_ID]" -AutoResume
-   
+
    macOS/Linux:
      ./jvid-download.sh "https://www.jvid.com/v/[PAGE_ID]" -a
 
@@ -36,16 +36,16 @@ Update Time: 2024-12-15
 使用範例：
   # 基本下載
   uv run jvid-dl -u "https://www.jvid.com/v/12345"
-  
+
   # 指定保存路徑
   uv run jvid-dl -u "https://www.jvid.com/v/12345" -p "my_videos"
-  
+
   # 啟用自動續傳
   uv run jvid-dl -u "https://www.jvid.com/v/12345" -a
-  
+
   # 診斷模式（解析問題時使用）
   uv run jvid-dl -u "https://www.jvid.com/v/12345" -d
-  
+
   # 多執行緒下載（測試成功後使用）
   uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3
 
@@ -61,8 +61,10 @@ Update Time: 2024-12-15
 - 使用指南：USER_GUIDE.md
 - 開發指南：DEVELOPER_GUIDE.md
 """
+
 from package.ParsingMediaLogic import ParsingMediaLogic
 from package.ArgumentParser import AP
+
 
 class Entry:
     def __init__(self):
@@ -78,10 +80,12 @@ class Entry:
         pm = ParsingMediaLogic(self)
         pm.main()
 
+
 def main():
     """專案入口點函數，供 uv run jvid-dl 使用"""
     entry = Entry()
     entry.main()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

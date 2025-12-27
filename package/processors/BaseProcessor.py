@@ -4,6 +4,7 @@
 Update Time: 2025-03-22
 基礎處理器 - 提供影片和圖片處理器的共用功能
 """
+
 import random
 import time
 from threading import Lock
@@ -41,7 +42,9 @@ class BaseProcessor(ABC):
         self.todo_list = []
         self.MAX_WORKERS = self.DEFAULT_MAX_WORKERS
 
-    def batch_download(self, todo_list, download_func, batch_size=None, desc='下載進度'):
+    def batch_download(
+        self, todo_list, download_func, batch_size=None, desc="下載進度"
+    ):
         """
         通用批次下載邏輯
 
@@ -63,12 +66,16 @@ class BaseProcessor(ABC):
         schedule = tqdm(total=len(todo_list), desc=desc)
 
         # 批次處理，避免一次提交所有任務導致記憶體問題
-        todo_chunks = [todo_list[i:i + batch_size] for i in range(0, len(todo_list), batch_size)]
+        todo_chunks = [
+            todo_list[i : i + batch_size] for i in range(0, len(todo_list), batch_size)
+        ]
 
         for chunk_index, current_chunk in enumerate(todo_chunks):
             with ThreadPoolExecutor(max_workers=current_workers) as executor:
                 # 提交當前批次的任務
-                future_to_item = {executor.submit(download_func, item): item for item in current_chunk}
+                future_to_item = {
+                    executor.submit(download_func, item): item for item in current_chunk
+                }
 
                 # 處理完成的任務
                 for future in as_completed(future_to_item):
@@ -78,7 +85,9 @@ class BaseProcessor(ABC):
                         if ret == 0:  # 成功
                             schedule.update(1)
                     except Exception as e:
-                        self.console.print(f"處理任務時出錯: {type(e).__name__}: {str(e)}")
+                        self.console.print(
+                            f"處理任務時出錯: {type(e).__name__}: {str(e)}"
+                        )
 
             # 顯示批次完成情況
             if chunk_index < len(todo_chunks) - 1:
