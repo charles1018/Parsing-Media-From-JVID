@@ -285,29 +285,55 @@ class ParsingMediaLogic:
 - 隨機化 User-Agent
 - 處理網路異常
 
-### 6. BaseProcessor.py - 處理器基礎類別
+### 6. BaseProcessor.py - 處理器基礎類別（抽象類別）
 
 **職責:**
-- 提供共用的批次下載功能
-- 執行緒安全的計數器管理
-- 可供 VideoProcessor 和 ImageProcessor 逐步採用
+- 提供共用的批次下載功能 (`batch_download()`)
+- 執行緒安全的計數器管理 (`get_next_count()`)
+- 定義類別常數：`DEFAULT_BATCH_SIZE`, `TASK_TIMEOUT`, `BATCH_WAIT_*`
 
 **執行緒安全機制:**
 - 使用 `threading.Lock` 保護共享資源
 - 提供 `get_next_count()` 方法確保計數器安全
 
+**類別結構:**
+```python
+class BaseProcessor(ABC):
+    DEFAULT_MAX_WORKERS = 1
+    DEFAULT_BATCH_SIZE = 100
+    TASK_TIMEOUT = 20
+    BATCH_WAIT_MIN = 1.0
+    BATCH_WAIT_MAX = 3.0
+
+    def batch_download(self, todo_list, download_func, batch_size=None, desc='下載進度'):
+        # 通用批次下載邏輯
+
+    def get_next_count(self) -> int:
+        # 執行緒安全計數器
+
+    @abstractmethod
+    def process(self, urls):
+        # 子類別必須實作
+```
+
 ### 7. VideoProcessor.py & ImageProcessor.py - 媒體處理器
+
+**繼承關係:** 兩者皆繼承自 `BaseProcessor`
 
 **職責:**
 - 下載影片/圖片
 - 處理 m3u8 串流
-- 合併影片片段
+- 合併影片片段（使用 subprocess 列表形式，無 shell=True）
 - 管理暫存檔案
 
 **執行緒安全特性:**
-- 使用 Lock 保護檔案計數器，避免命名衝突
+- 繼承 `BaseProcessor` 的 `batch_download()` 和 `get_next_count()`
 - VideoProcessor: 每個執行緒建立獨立的 AES 解密器
 - 支援 1-16 個並行執行緒
+
+**類別常數:**
+- `BATCH_SIZE`: 每批次處理數量
+- `DELAY_MIN`, `DELAY_MAX`: 請求間隔範圍
 
 ### 8. ContentDetector.py - 內容偵測
 

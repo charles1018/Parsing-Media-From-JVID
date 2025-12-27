@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🏗️ 架構重構與程式碼審查修復 (2025-12-27)
+
+#### Changed
+- ♻️ **BaseProcessor 整合完成**
+  - `VideoProcessor` 和 `ImageProcessor` 現在繼承自 `BaseProcessor`
+  - 使用 `batch_download()` 取代重複的批次下載邏輯
+  - 使用 `get_next_count()` 統一執行緒安全計數器
+
+- 🔢 **魔術數字常數化**
+  - `NetworkManager`: 新增 `DEFAULT_TIMEOUT`, `RATE_LIMIT_WAIT_*`, `UA_CHANGE_PROBABILITY` 等常數
+  - `BaseProcessor`: 新增 `DEFAULT_BATCH_SIZE`, `TASK_TIMEOUT`, `BATCH_WAIT_*` 等常數
+  - `VideoProcessor`/`ImageProcessor`: 新增 `BATCH_SIZE`, `DELAY_MIN`, `DELAY_MAX` 常數
+
+- 🔧 **DiagnosticMode 改進**
+  - `compare_with_working_examples` 新增 `network_manager` 可選參數
+  - 優先使用 NetworkManager 的重試和速率限制邏輯
+
+#### Fixed
+- 🔒 **安全性修復**
+  - `VideoProcessor.combine_ts_to_mp4()`: 使用列表形式傳遞 ffmpeg 命令
+  - 移除 `shell=True` 避免命令注入風險
+
+#### Improved
+- 🧪 **測試重構**
+  - `test_cookie_manager.py` 重構為標準 pytest 測試
+  - 使用 fixtures 和 monkeypatch 進行隔離測試
+  - 新增 11 個獨立的單元測試用例
+
+#### Documentation
+- 📝 更新 README.md 和 USER_GUIDE.md 標記續傳功能為實驗性
+- 📝 更新 CLAUDE.md 反映新的專案結構和規則
+
+---
+
 ### 🔧 程式碼品質改進 (2025-12-22)
 
 #### Fixed
@@ -43,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🏗️ **BaseProcessor 基礎類別**
   - 新增共用的批次下載功能
   - 提供執行緒安全的計數器方法
-  - 可供 VideoProcessor 和 ImageProcessor 未來逐步採用
+  - VideoProcessor 和 ImageProcessor 已完成整合（見 2025-12-27 更新）
 
 ---
 
