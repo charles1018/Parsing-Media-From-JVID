@@ -11,7 +11,7 @@
 - 🎯 智能偵測頁面中的影片和圖片內容
 - 📦 自動下載所有可用的影片版本
 - 🔐 從 `cookies.json` 自動讀取認證資訊
-- 🔄 支援中斷後自動恢復下載
+- 🔄 支援中斷後自動恢復下載 (實驗性功能)
 - 🧵 支援多執行緒下載（1-16 個執行緒，執行緒安全）
 - 🔍 詳細診斷功能幫助解決解析問題
 - ⚡ 使用 uv 進行依賴管理，安裝速度快 10-100 倍
@@ -93,13 +93,13 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 
 ## 📊 基本命令
 
-| 功能 | 命令 |
-|------|------|
-| 標準下載 | `uv run jvid-dl -u "URL"` |
-| 自動續傳 | `uv run jvid-dl -u "URL" -a` |
-| 指定路徑 | `uv run jvid-dl -u "URL" -p "路徑"` |
-| 多執行緒 | `uv run jvid-dl -u "URL" -n 3` |
-| 診斷模式 | `uv run jvid-dl -u "URL" -d` |
+| 功能 | 命令 | 說明 |
+|------|------|------|
+| 標準下載 | `uv run jvid-dl -u "URL"` | |
+| 自動續傳 | `uv run jvid-dl -u "URL" -a` | 實驗性功能 |
+| 指定路徑 | `uv run jvid-dl -u "URL" -p "路徑"` | |
+| 多執行緒 | `uv run jvid-dl -u "URL" -n 3` | |
+| 診斷模式 | `uv run jvid-dl -u "URL" -d` | |
 
 **可用的入口點別名：**
 - `jvid-dl` (推薦)
