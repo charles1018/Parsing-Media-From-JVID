@@ -684,17 +684,36 @@ git merge feature/new-feature
 
 ### 程式碼風格
 
-- 遵循 PEP 8 規範
+本專案使用 **ruff** 進行程式碼檢查和格式化：
+
+```bash
+# 檢查並自動修復
+ruff check --fix .
+
+# 格式化程式碼
+ruff format .
+
+# 一次完成（推薦在提交前執行）
+ruff check --fix . && ruff format .
+```
+
+**ruff 配置** (在 `pyproject.toml` 中)：
+- 目標版本：Python 3.8
+- 行長度：88 字元
+- 啟用規則：pycodestyle (E/W)、Pyflakes (F)、isort (I)、bugbear (B)、comprehensions (C4)、pyupgrade (UP)
+
+**其他風格要求：**
 - 使用有意義的變數名稱
 - 添加適當的註解和文檔字串
 - 保持函式簡潔（單一職責）
 
 ### Pull Request 檢查清單
 
+- [ ] 程式碼通過 `ruff check .`
+- [ ] 程式碼已用 `ruff format .` 格式化
 - [ ] 程式碼通過測試
 - [ ] 添加必要的註解
 - [ ] 更新相關文檔
-- [ ] 遵循專案程式碼風格
 - [ ] 提交訊息清晰明確
 
 ---

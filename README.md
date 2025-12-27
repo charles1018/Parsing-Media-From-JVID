@@ -142,23 +142,28 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3 -a
 
 ```
 Parsing-Media-From-JVID/
-├── Entry.py                    # 主程式入口
-├── pyproject.toml              # uv 專案配置
-├── processors/                 # 核心處理模組
-│   ├── cookie_manager.py       # Cookie 管理
-│   ├── network.py              # 網路請求
-│   ├── parser.py               # 頁面解析
-│   ├── media_downloader.py     # 媒體下載
-│   └── parsing_media_logic.py  # 主要邏輯
-├── utils/                      # 工具模組
-│   ├── logger.py               # 日誌系統
-│   ├── terminal_utils.py       # 終端工具
-│   └── diagnostic_logger.py    # 診斷日誌
-├── scripts/                    # 執行腳本
-│   ├── docker-download.*       # Docker 便利腳本
-│   └── jvid-download.*         # 本地執行腳本
-└── tests/                      # 測試檔案
-    └── test_cookie_manager.py  # Cookie 測試腳本
+├── Entry.py                      # 主程式入口
+├── pyproject.toml                # uv 專案配置（含 ruff 設定）
+├── package/                      # 主要功能包
+│   ├── ParsingMediaLogic.py      # 核心解析邏輯
+│   ├── ArgumentParser.py         # 命令列參數解析
+│   ├── DiagnosticMode.py         # 診斷模式實現
+│   ├── processors/               # 媒體處理器
+│   │   ├── BaseProcessor.py      # 處理器基礎類別
+│   │   ├── VideoProcessor.py     # 影片下載處理
+│   │   └── ImageProcessor.py     # 圖片下載處理
+│   ├── network/                  # 網路相關模組
+│   │   └── NetworkManager.py     # HTTP 請求管理
+│   └── utils/                    # 工具模組
+│       ├── CookieManager.py      # Cookie 自動管理
+│       ├── ContentDetector.py    # 內容類型偵測
+│       └── ProgressManager.py    # 下載進度管理
+├── scripts/                      # 執行腳本
+│   ├── docker-download.*         # Docker 便利腳本
+│   └── jvid-download.*           # 本地執行腳本
+└── tests/                        # 測試檔案
+    ├── test_cookie_manager.py    # Cookie 測試
+    └── test_path_fix.py          # 路徑處理測試
 ```
 
 詳細結構說明請參閱 [開發者指南](docs/DEVELOPER_GUIDE.md#-專案結構)
