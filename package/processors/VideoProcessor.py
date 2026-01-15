@@ -8,6 +8,7 @@ import os
 import random
 import subprocess
 import time
+from functools import partial
 from subprocess import PIPE, STDOUT
 
 from Crypto.Cipher import AES
@@ -125,23 +126,17 @@ class VideoProcessor(BaseProcessor):
             # 重置計數器
             self.count = 0
 
-            # 保存當前工作目錄
-            current_working_dir = self.base_path
-            self.base_path = version_path  # 臨時修改保存路徑
-
-            # 下載 TS 分段
-            self.download_ts_segments()
+            # 下載 TS 分段（傳遞 version_path 而非修改實例變數）
+            self.download_ts_segments(save_path=version_path)
 
             # 創建合併文件列表
             with open(os.path.join(version_path, "media.txt"), "w") as f:
                 for i in range(0, self.count):
                     f.write(f"file '{i}.ts'\n")
 
-            # 合併 ts 檔並轉為 mp4
-            self.combine_ts_to_mp4()
+            # 合併 ts 檔並轉為 mp4（傳遞 version_path 而非修改實例變數）
+            self.combine_ts_to_mp4(save_path=version_path)
 
-            # 還原原始路徑，準備處理下一個版本
-            self.base_path = current_working_dir
             success_count += 1
 
         # 下載完成後刪除暫存檔
@@ -159,25 +154,40 @@ class VideoProcessor(BaseProcessor):
         video_urls, video_types = urls
         self.process_video_urls(video_urls, video_types)
 
-    def download_ts_segments(self):
-        """下載所有TS分段，使用基礎類別的批次下載功能"""
+    def download_ts_segments(self, save_path=None):
+        """
+        下載所有TS分段，使用基礎類別的批次下載功能
+
+        參數:
+            save_path: 保存路徑（如未指定則使用 self.base_path）
+        """
+        if save_path is None:
+            save_path = self.base_path
+
+        # 使用 partial 綁定 save_path 參數
+        download_func = partial(self._download_single_ts, save_path=save_path)
+
         self.batch_download(
             todo_list=self.todo_list,
-            download_func=self._download_single_ts,
+            download_func=download_func,
             batch_size=self.BATCH_SIZE,
             desc="Downloads Schedule",
         )
 
-    def _download_single_ts(self, url):
+    def _download_single_ts(self, url, save_path=None):
         """
         下載並解密單個 TS 分段檔案（供 batch_download 調用）
 
         參數:
             url: TS 分段的 URL
+            save_path: 保存路徑（如未指定則使用 self.base_path）
 
         返回:
             成功返回 0，失敗返回 -1
         """
+        if save_path is None:
+            save_path = self.base_path
+
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
             time.sleep(random.uniform(self.DELAY_MIN, self.DELAY_MAX))
@@ -192,7 +202,7 @@ class VideoProcessor(BaseProcessor):
                 cryptor = AES.new(self.aes_key, AES.MODE_CBC)
                 decrypted_data = cryptor.decrypt(res.content)
 
-                ts_file_path = os.path.join(self.base_path, f"{current_count}.ts")
+                ts_file_path = os.path.join(save_path, f"{current_count}.ts")
                 with open(ts_file_path, "wb") as f:
                     f.write(decrypted_data)
                 return 0
@@ -200,10 +210,18 @@ class VideoProcessor(BaseProcessor):
             self.console.print(f"處理 TS 檔案錯誤: {type(e).__name__}: {str(e)}")
         return -1
 
-    def combine_ts_to_mp4(self):
-        """合併 TS 文件為 MP4"""
+    def combine_ts_to_mp4(self, save_path=None):
+        """
+        合併 TS 文件為 MP4
+
+        參數:
+            save_path: 保存路徑（如未指定則使用 self.base_path）
+        """
+        if save_path is None:
+            save_path = self.base_path
+
         # 提取當前處理的版本名稱
-        folder_name = os.path.basename(self.base_path)
+        folder_name = os.path.basename(save_path)
         output_name = "media.mp4"
 
         # 如果是版本目錄，使用自定義名稱
@@ -214,7 +232,7 @@ class VideoProcessor(BaseProcessor):
         cmd = ["ffmpeg", "-f", "concat", "-i", "media.txt", "-c", "copy", output_name]
         self.console.print(f"執行合併命令: {' '.join(cmd)}")
 
-        pop = subprocess.Popen(cmd, stdout=PIPE, stderr=STDOUT, cwd=self.base_path)
+        pop = subprocess.Popen(cmd, stdout=PIPE, stderr=STDOUT, cwd=save_path)
 
         while pop.poll() is None:
             line = pop.stdout.readline()
@@ -226,7 +244,7 @@ class VideoProcessor(BaseProcessor):
             except OSError as e:
                 print(e)
 
-        output_path = os.path.join(self.base_path, output_name)
+        output_path = os.path.join(save_path, output_name)
         self.console.print(f"合併完成: {output_path}")
 
     def remove_all_temp_files(self):
