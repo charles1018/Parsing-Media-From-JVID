@@ -40,7 +40,7 @@ class ParsingMediaLogic:
         self.log_record()
 
         # 初始化模組
-        self.headers = self.update_headers()
+        self.headers = self.update_headers(console=self.console)
         self.network_manager = NetworkManager(self.headers, 20, 0.5, self.console)
         self.content_detector = ContentDetector()
         self.progress_manager = ProgressManager(self.path, self.console)
@@ -57,10 +57,16 @@ class ParsingMediaLogic:
             os.makedirs(path)
 
     @staticmethod
-    def update_headers() -> dict:
+    def update_headers(console=None) -> dict:
         """
         取得請求頭，優先從 cookies.json 讀取，否則回退到 permissions.txt
+
+        參數:
+            console: Console 物件用於輸出（如未指定則使用 print）
         """
+        # 定義輸出函數
+        output = console.print if console else print
+
         # 優先使用 CookieManager 讀取 cookies
         cookie_manager = CookieManager()
         user_agent = NetworkManager.get_random_user_agent()
@@ -72,7 +78,7 @@ class ParsingMediaLogic:
             return headers
 
         # 回退:嘗試從舊的 permissions.txt 讀取
-        print("⚠️  未找到 cookies 文件,嘗試讀取 permissions.txt...")
+        output("⚠️  未找到 cookies 文件,嘗試讀取 permissions.txt...")
         try:
             permissions_path = os.path.join(os.getcwd(), "package", "permissions.txt")
             with open(permissions_path, encoding="utf-8") as f:
@@ -82,11 +88,11 @@ class ParsingMediaLogic:
                 "authorization": txt[0].split(",")[-1].replace("\n", ""),
                 "cookie": txt[1].split(",")[-1].replace("\n", ""),
             }
-            print("✓ 成功從 permissions.txt 讀取認證資訊")
+            output("✓ 成功從 permissions.txt 讀取認證資訊")
             return headers
         except Exception as e:
-            print(f"⚠️  無法讀取 permissions.txt: {e}")
-            print("⚠️  將使用基本請求頭（部分功能可能受限）")
+            output(f"⚠️  無法讀取 permissions.txt: {e}")
+            output("⚠️  將使用基本請求頭（部分功能可能受限）")
             return {"user-agent": user_agent}
 
     @staticmethod

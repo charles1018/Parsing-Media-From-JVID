@@ -238,11 +238,11 @@ class VideoProcessor(BaseProcessor):
             line = pop.stdout.readline()
             try:
                 line = line.decode("utf8")
-                print(line)
+                self.console.print(line, end="")
             except UnicodeDecodeError:
                 pass
             except OSError as e:
-                print(e)
+                self.console.print(f"讀取輸出時發生錯誤: {e}")
 
         output_path = os.path.join(save_path, output_name)
         self.console.print(f"合併完成: {output_path}")
