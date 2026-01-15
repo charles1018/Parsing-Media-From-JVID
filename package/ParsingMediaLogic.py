@@ -384,12 +384,14 @@ class ParsingMediaLogic:
             self.url, self.type, self.auto_resume
         )
         if resume_data:
-            self.console.print("繼續上次未完成的下載")
-            # TODO: 根據進度數據恢復下載
-            # 由於需要深度重構，此功能暫不實現
-            # 在新的架構中，需要重新設計續傳機制
-        else:
-            # 如果沒有恢復下載，就開始新的下載
-            self.identify_type_operation()
+            self.console.print("[yellow]發現未完成的下載記錄[/yellow]")
+            self.console.print(
+                "[yellow]注意: 續傳功能尚未完成實作，將重新開始下載[/yellow]"
+            )
+            # TODO: 未來實作續傳功能時，應根據 resume_data 恢復下載
+            # 目前直接開始新的下載
+
+        # 開始下載（無論是否有續傳資料）
+        self.identify_type_operation()
 
         self.progress_bar("Finish_Task")
