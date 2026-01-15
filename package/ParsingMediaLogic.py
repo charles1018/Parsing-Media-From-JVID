@@ -108,14 +108,8 @@ class ParsingMediaLogic:
         ParsingMediaLogic.check_folder(self.path)
         file = os.path.join(self.path, "downloads_log.txt")
         content = f"{str(ParsingMediaLogic.utc_to_now())[:19]} | {self.url}\n"
-        if not os.path.exists(file):
-            with open(file, "w", encoding="utf-8") as f:
-                f.write(content)
-        else:
-            with open(file, encoding="utf-8") as f:
-                existing_content = f.read()
-            with open(file, "w", encoding="utf-8") as f:
-                f.write(existing_content + content)
+        with open(file, "a", encoding="utf-8") as f:
+            f.write(content)
 
     def progress_bar(self, task: str, symbol: str = "="):
         """顯示進度提示"""
