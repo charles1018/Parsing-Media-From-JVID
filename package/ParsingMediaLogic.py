@@ -89,11 +89,28 @@ class ParsingMediaLogic:
             return {"user-agent": user_agent}
 
     @staticmethod
-    def get_target_title(soup: BeautifulSoup) -> str:
-        """取得頁面標題並清理不合法字符"""
+    def get_target_title(soup: BeautifulSoup, max_bytes: int = 200) -> str:
+        """
+        取得頁面標題並清理不合法字符
+
+        Args:
+            soup: BeautifulSoup 物件
+            max_bytes: 最大位元組數（預設 200，Linux 限制為 255）
+
+        Returns:
+            清理後的標題字串
+        """
         get_title = soup.find("title").text
         for symbol in ["/", "<", ">", ":", "|", "?", "*", '"']:
             get_title = get_title.replace(symbol, "")
+
+        # 限制檔案名稱長度（避免超過檔案系統限制）
+        encoded = get_title.encode("utf-8")
+        if len(encoded) > max_bytes:
+            # 截斷並確保不會截斷 UTF-8 多位元組字元
+            truncated = encoded[:max_bytes].decode("utf-8", errors="ignore")
+            get_title = truncated.rstrip() + "..."
+
         return get_title
 
     @staticmethod

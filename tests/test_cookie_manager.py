@@ -122,6 +122,104 @@ class TestCookieManager:
         assert len(CookieManager.COOKIE_FILENAMES) > 0
         assert "www.jvid.com_cookies.json" in CookieManager.COOKIE_FILENAMES
 
+    def test_cookie_filenames_includes_txt(self):
+        """測試支援的 cookie 檔名常數包含 cookies.txt"""
+        assert "cookies.txt" in CookieManager.COOKIE_FILENAMES
+
+    @pytest.fixture
+    def sample_netscape_cookies(self):
+        """提供測試用的 Netscape 格式 cookie 資料"""
+        return """# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.jvid.com	TRUE	/	FALSE	1784340687	session_id	abc123
+.jvid.com	TRUE	/	TRUE	1784340687	auth_token	test_auth_token_value
+www.jvid.com	FALSE	/api	FALSE	0	user_pref	dark_mode
+"""
+
+    @pytest.fixture
+    def netscape_cookie_file(self, tmp_path, sample_netscape_cookies):
+        """建立臨時 Netscape 格式 cookie 檔案"""
+        cookie_path = tmp_path / "cookies.txt"
+        cookie_path.write_text(sample_netscape_cookies, encoding="utf-8")
+        return cookie_path
+
+    def test_parse_netscape_cookies(self, sample_netscape_cookies):
+        """測試解析 Netscape 格式 cookies"""
+        manager = CookieManager()
+        # 使用 domain_filter="jvid.com" 過濾 (預設值)
+        cookies = manager._parse_netscape_cookies(sample_netscape_cookies)
+
+        assert cookies is not None
+        assert len(cookies) == 3
+
+        # 驗證第一個 cookie
+        assert cookies[0]["name"] == "session_id"
+        assert cookies[0]["value"] == "abc123"
+        assert cookies[0]["domain"] == ".jvid.com"
+        assert cookies[0]["path"] == "/"
+        assert cookies[0]["secure"] is False
+        assert cookies[0]["hostOnly"] is False  # TRUE flag 表示子網域可存取
+
+        # 驗證第二個 cookie (secure = TRUE)
+        assert cookies[1]["name"] == "auth_token"
+        assert cookies[1]["secure"] is True
+
+        # 驗證第三個 cookie (flag = FALSE)
+        assert cookies[2]["name"] == "user_pref"
+        assert cookies[2]["domain"] == "www.jvid.com"
+        assert cookies[2]["hostOnly"] is True  # FALSE flag 表示只有該主機可存取
+
+    def test_load_cookies_txt_format(self, tmp_path, sample_netscape_cookies, monkeypatch):
+        """測試載入 Netscape 格式 cookies.txt"""
+        cookie_path = tmp_path / "cookies.txt"
+        cookie_path.write_text(sample_netscape_cookies, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        manager = CookieManager()
+        cookies = manager.load_cookies()
+
+        assert cookies is not None
+        assert len(cookies) == 3
+        assert cookies[0]["name"] == "session_id"
+
+    def test_extract_auth_info_from_netscape_cookies(self, sample_netscape_cookies):
+        """測試從 Netscape 格式 cookies 提取認證資訊"""
+        manager = CookieManager()
+        cookies = manager._parse_netscape_cookies(sample_netscape_cookies)
+        auth_token, cookie_string = manager.extract_auth_info(cookies)
+
+        # 驗證 cookie 字串包含所有 cookies
+        assert cookie_string is not None
+        assert "session_id=abc123" in cookie_string
+        assert "auth_token=test_auth_token_value" in cookie_string
+        assert "user_pref=dark_mode" in cookie_string
+
+    def test_parse_netscape_cookies_domain_filter(self):
+        """測試 Netscape 格式 cookies 的網域過濾功能"""
+        content = """# Netscape HTTP Cookie File
+.jvid.com	TRUE	/	FALSE	1784340687	jvid_cookie	jvid_value
+.google.com	TRUE	/	FALSE	1784340687	google_cookie	google_value
+.facebook.com	TRUE	/	FALSE	1784340687	fb_cookie	fb_value
+www.jvid.com	FALSE	/	FALSE	0	another_jvid	another_value
+"""
+        manager = CookieManager()
+
+        # 預設過濾 jvid.com
+        cookies = manager._parse_netscape_cookies(content)
+        assert len(cookies) == 2
+        assert all("jvid" in c["domain"] for c in cookies)
+
+        # 指定過濾 google.com
+        cookies = manager._parse_netscape_cookies(content, domain_filter="google.com")
+        assert len(cookies) == 1
+        assert cookies[0]["name"] == "google_cookie"
+
+        # 不過濾（傳入空字串）
+        cookies = manager._parse_netscape_cookies(content, domain_filter="")
+        assert len(cookies) == 4
+
 
 class TestNetworkManagerUserAgent:
     """NetworkManager User-Agent 相關測試"""

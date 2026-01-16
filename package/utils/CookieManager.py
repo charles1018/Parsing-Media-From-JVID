@@ -12,11 +12,12 @@ from typing import Dict, Optional, Tuple
 class CookieManager:
     """管理 JVID cookies 的讀取和解析"""
 
-    # 支援的 cookie 文件名稱模式
+    # 支援的 cookie 文件名稱模式（按優先順序排列）
     COOKIE_FILENAMES = [
         "www.jvid.com_cookies.json",
         "jvid_cookies.json",
         "cookies.json",
+        "cookies.txt",  # Netscape HTTP Cookie File 格式
     ]
 
     def __init__(self, base_path: Optional[str] = None):
@@ -52,9 +53,58 @@ class CookieManager:
                     return cookie_path
         return None
 
+    def _parse_netscape_cookies(self, content: str, domain_filter: str = "jvid.com") -> list:
+        """
+        解析 Netscape HTTP Cookie File 格式（cookies.txt）
+
+        格式說明：
+        - 以 # 開頭的行是註解
+        - 每行以 TAB 分隔，包含 7 個欄位
+        - 欄位順序：domain, flag, path, secure, expiration, name, value
+
+        Args:
+            content: cookies.txt 文件內容
+            domain_filter: 只保留包含此字串的網域 cookies（預設為 "jvid.com"）
+
+        Returns:
+            cookie 字典列表，格式與 JSON 格式一致
+        """
+        cookies = []
+        for line in content.splitlines():
+            line = line.strip()
+            # 跳過空行和註解
+            if not line or line.startswith("#"):
+                continue
+
+            # 按 TAB 分割欄位
+            fields = line.split("\t")
+            if len(fields) >= 7:
+                domain, flag, path, secure, expiration, name, value = fields[:7]
+
+                # 過濾網域：只保留符合條件的 cookies
+                if domain_filter and domain_filter not in domain:
+                    continue
+
+                cookies.append(
+                    {
+                        "domain": domain,
+                        "hostOnly": flag.upper() != "TRUE",
+                        "path": path,
+                        "secure": secure.upper() == "TRUE",
+                        "expirationDate": int(expiration) if expiration.isdigit() else 0,
+                        "name": name,
+                        "value": value,
+                    }
+                )
+        return cookies
+
     def load_cookies(self) -> Optional[list]:
         """
         載入 cookie 文件內容
+
+        支援格式：
+        - JSON 格式 (.json)
+        - Netscape HTTP Cookie File 格式 (.txt)
 
         Returns:
             cookie 列表，若載入失敗則返回 None
@@ -65,7 +115,15 @@ class CookieManager:
 
         try:
             with open(cookie_file, encoding="utf-8") as f:
-                cookies = json.load(f)
+                content = f.read()
+
+            # 根據副檔名決定解析方式
+            if cookie_file.suffix.lower() == ".txt":
+                cookies = self._parse_netscape_cookies(content)
+            else:
+                # 預設為 JSON 格式
+                cookies = json.loads(content)
+
             return cookies
         except Exception as e:
             print(f"警告: 無法讀取 cookie 文件: {e}")
