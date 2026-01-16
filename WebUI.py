@@ -11,12 +11,18 @@ JVID 媒體下載工具 - Gradio Web UI
 """
 
 import os
+import signal
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Generator
 
 import gradio as gr
 
 from package.ParsingMediaLogic import ParsingMediaLogic
+
+
+def shutdown_server():
+    """關閉伺服器"""
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
 @dataclass
@@ -182,7 +188,16 @@ def create_ui() -> gr.Blocks:
                 - 請確保網路連線穩定
                 - 下載過程中請勿關閉此頁面
                 - 如遇問題，可嘗試降低執行緒數
+                - 使用完畢後，請點擊「關閉伺服器」按鈕結束程式
                 """
+            )
+
+        # 關閉伺服器按鈕
+        with gr.Row():
+            shutdown_btn = gr.Button(
+                "⏹️ 關閉伺服器",
+                variant="stop",
+                size="sm",
             )
 
         # 事件綁定
@@ -197,6 +212,12 @@ def create_ui() -> gr.Blocks:
             outputs=[url_input, path_input, auto_resume_input, thread_input, status_output],
         )
 
+        shutdown_btn.click(
+            fn=shutdown_server,
+            inputs=None,
+            outputs=None,
+        )
+
     return demo
 
 
@@ -208,6 +229,7 @@ def main():
         server_port=7860,
         share=False,  # 設為 True 可產生公開連結
         show_error=True,
+        inbrowser=True,  # 自動打開瀏覽器
     )
 
 
