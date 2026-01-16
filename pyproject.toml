@@ -3,7 +3,7 @@ name = "parsing-media-from-jvid"
 version = "1.0.0"
 description = "JVID 媒體下載工具 - 支援影片和圖片自動下載"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Charles", email = "" }
@@ -17,8 +17,7 @@ classifiers = [
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
+
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -26,6 +25,7 @@ classifiers = [
 
 # 專案依賴
 dependencies = [
+    "gradio>=5.0.0",
     "tqdm>=4.64.1",
     "rich>=13.9.4",
     "requests>=2.31.0",
@@ -39,6 +39,7 @@ dependencies = [
 jvid-dl = "Entry:main"
 jvid = "Entry:main"           # 短別名
 jvid-download = "Entry:main"  # 描述性別名
+jvid-webui = "WebUI:main"     # Web UI 入口
 
 [build-system]
 requires = ["hatchling"]
@@ -60,7 +61,7 @@ Issues = "https://github.com/charles1018/Parsing-Media-From-JVID/issues"
 Changelog = "https://github.com/charles1018/Parsing-Media-From-JVID/blob/main/CHANGELOG.md"
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
