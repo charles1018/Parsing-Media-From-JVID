@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🌐 Web UI 功能 (2026-01)
+
+#### Added
+- ✨ **Gradio Web UI 支援**
+  - 新增 `WebUI.py` 提供圖形化網頁介面
+  - 新增 `jvid-webui` 入口點，可直接執行 `uv run jvid-webui`
+  - 自動開啟瀏覽器訪問 http://localhost:7860
+  - 關閉伺服器按鈕，方便結束程式
+
+- 🎨 **Web UI 功能特色**
+  - JVID 網址輸入框，支援 URL 格式驗證
+  - 儲存路徑設定（預設為 `media` 資料夾）
+  - 執行緒數滑桿（1-8，建議使用 1-3）
+  - 自動續傳選項
+  - 下載狀態即時顯示
+  - 內建使用說明摺疊區塊
+
+#### Dependencies
+- 📦 新增 `gradio>=5.0.0` 依賴
+
+---
+
 ### 🏗️ 架構重構與程式碼審查修復 (2025-12-27)
 
 #### Changed

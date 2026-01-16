@@ -16,6 +16,7 @@
 - 🔍 詳細診斷功能幫助解決解析問題
 - ⚡ 使用 uv 進行依賴管理，安裝速度快 10-100 倍
 - 🛠️ 模組化架構，易於維護和擴展
+- 🌐 **全新 Web UI** - Gradio 網頁介面，適合不熟悉命令列的使用者
 
 ## 📋 系統需求
 
@@ -42,9 +43,16 @@ uv sync
 
 ### 3. 開始下載
 
+**命令列方式：**
 ```bash
 uv run jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 ```
+
+**Web UI 方式（推薦新手）：**
+```bash
+uv run jvid-webui
+```
+啟動後會自動開啟瀏覽器，在網頁介面中輸入網址即可下載。
 
 ## 🐳 Docker 部署（推薦）
 
@@ -95,6 +103,7 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 
 | 功能 | 命令 | 說明 |
 |------|------|------|
+| 🌐 Web UI | `uv run jvid-webui` | 網頁介面（推薦新手） |
 | 標準下載 | `uv run jvid-dl -u "URL"` | |
 | 自動續傳 | `uv run jvid-dl -u "URL" -a` | 實驗性功能 |
 | 指定路徑 | `uv run jvid-dl -u "URL" -p "路徑"` | |
@@ -105,6 +114,7 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 - `jvid-dl` (推薦)
 - `jvid`
 - `jvid-download`
+- `jvid-webui` (Web UI)
 
 **便捷腳本：**
 - Windows: `scripts/jvid-download.bat` 或 `scripts/jvid-download.ps1`
@@ -142,7 +152,8 @@ uv run jvid-dl -u "https://www.jvid.com/v/12345" -n 3 -a
 
 ```
 Parsing-Media-From-JVID/
-├── Entry.py                      # 主程式入口
+├── Entry.py                      # 命令列主程式入口
+├── WebUI.py                      # Gradio Web UI 入口
 ├── pyproject.toml                # uv 專案配置（含 ruff 設定）
 ├── package/                      # 主要功能包
 │   ├── ParsingMediaLogic.py      # 核心解析邏輯
