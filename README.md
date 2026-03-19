@@ -54,6 +54,33 @@ uv run jvid-webui
 ```
 啟動後會自動開啟瀏覽器，在網頁介面中輸入網址即可下載。
 
+## 🌐 Web UI 網頁介面
+
+除了命令列之外，本專案提供基於 **Gradio** 的網頁圖形介面，適合不熟悉命令列的使用者。
+
+### 啟動方式
+
+```bash
+uv run jvid-webui
+```
+
+啟動後會自動開啟瀏覽器，訪問 http://localhost:7860。
+
+### 介面功能
+
+| 功能 | 說明 |
+|------|------|
+| JVID 網址輸入 | 貼上要下載的 JVID 頁面網址，支援 URL 格式驗證 |
+| 儲存路徑設定 | 自訂檔案儲存位置（預設 `media`） |
+| 執行緒數調整 | 滑桿選擇 1-8 個下載執行緒 |
+| 自動續傳 | 勾選即可啟用中斷恢復功能 |
+| 下載狀態顯示 | 即時顯示下載進度與結果 |
+| 關閉伺服器 | 一鍵結束 Web UI 程式 |
+
+**詳細使用說明請參閱：** [USER_GUIDE.md - Web UI 使用指南](docs/USER_GUIDE.md#web-ui-使用指南)
+
+---
+
 ## 🐳 Docker 部署（推薦）
 
 支援使用 Docker 進行一鍵部署，無需配置 Python 環境！
@@ -121,6 +148,12 @@ docker compose run --rm jvid-dl -u "https://www.jvid.com/v/[PAGE_ID]"
 - macOS/Linux: `scripts/jvid-download.sh`
 
 ## 🎯 使用範例
+
+### Web UI（推薦新手）
+```bash
+uv run jvid-webui
+# 啟動後在瀏覽器中輸入網址 → 點擊「開始下載」→ 完成後點擊「關閉伺服器」
+```
 
 ### 基本下載
 ```bash
