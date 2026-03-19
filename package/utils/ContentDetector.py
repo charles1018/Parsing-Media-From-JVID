@@ -106,7 +106,46 @@ class ContentDetector:
                 video_urls.append(url)
                 video_types.append("direct_regex_m3u8")
 
+        # 方法4: 從 Nuxt/Vue payload 中提取 m3u8 URL
+        # 這類 JavaScript 框架會將 URL 中的 / 編碼為 \u002F
+        script_urls = ContentDetector._extract_urls_from_js_payload(html_content)
+        for url in script_urls:
+            if url not in video_urls:  # 避免重複
+                video_urls.append(url)
+                video_types.append("js_payload_m3u8")
+
         return video_urls, video_types
+
+    @staticmethod
+    def _extract_urls_from_js_payload(html_content):
+        """
+        從 JavaScript payload（如 Nuxt/Vue SSR）中提取 m3u8 URL
+
+        這類框架會將 URL 中的 / 編碼為 \\u002F，
+        導致一般的 regex 無法匹配。
+
+        參數:
+            html_content: 頁面HTML內容
+
+        返回:
+            解碼後的 m3u8 URL 列表
+        """
+        # 匹配含 \u002F 編碼的 transcode_video m3u8 URL
+        encoded_pattern = (
+            r'https?:\\u002F\\u002F[^"\s,\]]*'
+            r'transcode_video[^"\s,\]]*'
+            r"_playList\.m3u8"
+        )
+        encoded_urls = re.findall(encoded_pattern, html_content)
+
+        # 解碼 \u002F → /
+        decoded_urls = []
+        for url in encoded_urls:
+            decoded = url.replace("\\u002F", "/")
+            if decoded not in decoded_urls:
+                decoded_urls.append(decoded)
+
+        return decoded_urls
 
     @staticmethod
     def extract_image_urls(soup):
