@@ -89,7 +89,9 @@ class ParsingMediaLogic:
             return {"user-agent": user_agent}
 
     @staticmethod
-    def get_target_title(soup: BeautifulSoup, max_bytes: int = 200, max_chars: int = 80) -> str:
+    def get_target_title(
+        soup: BeautifulSoup, max_bytes: int = 200, max_chars: int = 80
+    ) -> str:
         """
         取得頁面標題並清理不合法字符
 
@@ -104,6 +106,19 @@ class ParsingMediaLogic:
         get_title = soup.find("title").text
         for symbol in ["/", "<", ">", ":", "|", "?", "*", '"']:
             get_title = get_title.replace(symbol, "")
+
+        # 移除系統主控台編碼無法處理的字元（如 emoji、特殊符號），
+        # 避免 Windows 主控台編碼 (如 cp950) 在印出路徑時拋出 UnicodeEncodeError
+        import locale
+
+        console_encoding = locale.getpreferredencoding(False)
+        get_title = get_title.encode(console_encoding, errors="ignore").decode(
+            console_encoding
+        )
+        # 清理因移除字元而產生的多餘空白
+        import re as _re
+
+        get_title = _re.sub(r"  +", " ", get_title).strip()
 
         # 限制檔案名稱長度（避免超過檔案系統限制）
         truncated = False

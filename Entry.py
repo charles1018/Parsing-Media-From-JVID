@@ -61,8 +61,21 @@ Update Time: 2024-12-15
 - 開發指南：DEVELOPER_GUIDE.md
 """
 
+import sys
+
 from package.ArgumentParser import AP
 from package.ParsingMediaLogic import ParsingMediaLogic
+
+
+def _fix_windows_console_encoding():
+    """Windows 主控台預設使用地區編碼（如 cp950），無法處理 emoji 等 Unicode 字元，
+    導致 Rich Console 印出含 emoji 的路徑時拋出 UnicodeEncodeError。
+    將 stdout/stderr 切換為 UTF-8 並以 replace 處理無法編碼的字元。"""
+    if sys.platform == "win32":
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 class Entry:
@@ -82,6 +95,7 @@ class Entry:
 
 def main():
     """專案入口點函數，供 uv run jvid-dl 使用"""
+    _fix_windows_console_encoding()
     entry = Entry()
     entry.main()
 

@@ -35,10 +35,13 @@ class ContentDetector:
                 has_video = True
                 break
 
-        # 檢查是否有圖片內容
+        # 檢查是否有圖片內容（遍歷所有 lightbox_fancybox div，
+        # 因為第一個可能是空的佔位元素）
         image_divs = soup.find_all("div", {"class": "w-full lightbox_fancybox"})
-        if image_divs:
-            for div in image_divs[0].find_all("div") if image_divs else []:
+        for parent_div in image_divs:
+            if has_image:
+                break
+            for div in parent_div.find_all("div"):
                 try:
                     if div.get("data-src", "").startswith("https"):
                         has_image = True
@@ -118,10 +121,11 @@ class ContentDetector:
         """
         image_urls = []
 
-        # 從lightbox_fancybox中提取圖片URL
+        # 從所有 lightbox_fancybox 中提取圖片URL
+        # （第一個 div 可能是空的佔位元素，需遍歷全部）
         image_divs = soup.find_all("div", {"class": "w-full lightbox_fancybox"})
-        if image_divs:
-            for div in image_divs[0].find_all("div"):
+        for parent_div in image_divs:
+            for div in parent_div.find_all("div"):
                 try:
                     if div.get("data-src", "").startswith("https"):
                         image_urls.append(div["data-src"])

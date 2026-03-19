@@ -12,6 +12,7 @@ JVID 媒體下載工具 - Gradio Web UI
 
 import os
 import signal
+import sys
 from collections.abc import Generator
 from dataclasses import dataclass
 
@@ -209,7 +210,13 @@ def create_ui() -> gr.Blocks:
 
         clear_btn.click(
             fn=lambda: ("", "media", True, 1, ""),
-            outputs=[url_input, path_input, auto_resume_input, thread_input, status_output],
+            outputs=[
+                url_input,
+                path_input,
+                auto_resume_input,
+                thread_input,
+                status_output,
+            ],
         )
 
         shutdown_btn.click(
@@ -221,8 +228,18 @@ def create_ui() -> gr.Blocks:
     return demo
 
 
+def _fix_windows_console_encoding():
+    """Windows 主控台 UTF-8 編碼修正（同 Entry.py）"""
+    if sys.platform == "win32":
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main():
     """主程式入口"""
+    _fix_windows_console_encoding()
     demo = create_ui()
     demo.launch(
         server_name="0.0.0.0",  # 允許外部訪問
