@@ -111,6 +111,20 @@ Cookie 是訪問 JVID 內容所必需的認證資訊。
 ]
 ```
 
+### 方法 3: 使用 cookies.txt (Netscape 格式)
+
+如果你的瀏覽器擴充套件匯出的是 Netscape HTTP Cookie File 格式（`.txt`），也可以直接使用：
+
+1. 使用支援 Netscape 格式的擴充套件匯出 cookies
+2. 保存為 `cookies.txt` 放在專案根目錄
+
+**cookies.txt 格式範例：**
+```
+# Netscape HTTP Cookie File
+.jvid.com	TRUE	/	TRUE	0	auth	%7B%22token%22%3A%22...%22%7D
+.jvid.com	TRUE	/	FALSE	0	session_id	abc123
+```
+
 ### 支援的文件名稱
 
 工具會自動搜尋以下文件名稱（優先順序由高到低）：
@@ -118,6 +132,7 @@ Cookie 是訪問 JVID 內容所必需的認證資訊。
 1. `www.jvid.com_cookies.json` ✅ 推薦
 2. `jvid_cookies.json`
 3. `cookies.json`
+4. `cookies.txt` (Netscape HTTP Cookie File 格式)
 
 ---
 
@@ -657,8 +672,8 @@ done
 ### Q: 顯示「未找到 cookie 文件」
 
 **解決方案：**
-1. 確認 `www.jvid.com_cookies.json` 在專案根目錄
-2. 運行測試：`uv run python test_cookie_manager.py`
+1. 確認 cookie 文件在專案根目錄（支援 `www.jvid.com_cookies.json`、`cookies.json`、`cookies.txt` 等格式）
+2. 運行測試：`uv run pytest tests/test_cookie_manager.py`
 
 ### Q: 下載速度很慢
 

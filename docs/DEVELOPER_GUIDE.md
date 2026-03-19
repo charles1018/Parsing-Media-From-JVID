@@ -20,13 +20,18 @@
 
 ```
 Parsing-Media-From-JVID/
-├── Entry.py                        # 程式入口，處理命令列參數
-├── pyproject.toml                  # uv 專案配置
+├── Entry.py                        # 命令列主程式入口
+├── WebUI.py                        # Gradio Web UI 入口
+├── pyproject.toml                  # uv 專案配置（含 ruff 設定）
 ├── uv.lock                         # 依賴鎖定檔
 ├── .gitignore                      # Git 忽略規則
 ├── README.md                       # 專案說明
-├── USER_GUIDE.md                   # 使用者指南
-├── DEVELOPER_GUIDE.md              # 本文件
+├── CHANGELOG.md                    # 版本變更日誌
+│
+├── docs/                           # 文檔目錄
+│   ├── USER_GUIDE.md              # 使用者指南
+│   ├── DEVELOPER_GUIDE.md         # 本文件
+│   └── DOCKER.md                  # Docker 部署指南
 │
 ├── package/                        # 主要功能包
 │   ├── __init__.py                # 包初始化
@@ -46,9 +51,18 @@ Parsing-Media-From-JVID/
 │   │
 │   └── utils/                     # 工具模組
 │       ├── __init__.py
-│       ├── CookieManager.py       # Cookie 自動管理 ⭐ 新增
+│       ├── CookieManager.py       # Cookie 自動管理（支援 JSON 及 Netscape 格式）
 │       ├── ContentDetector.py     # 內容類型偵測
 │       └── ProgressManager.py     # 下載進度管理
+│
+├── scripts/                        # 執行腳本
+│   ├── docker-download.*          # Docker 便利腳本
+│   └── jvid-download.*            # 本地執行腳本
+│
+├── tests/                          # 測試檔案
+│   ├── test_cookie_manager.py     # Cookie 測試
+│   ├── test_content_detector.py   # 內容偵測測試
+│   └── test_path_fix.py           # 路徑處理測試
 │
 ├── media/                          # 預設下載目錄
 │   ├── downloads_log.txt          # 下載記錄
@@ -192,10 +206,10 @@ class AP:
 - `-n, --threads`: 執行緒數量
 - `-w, --working-url`: 添加成功案例
 
-### 3. CookieManager.py - Cookie 管理 ⭐ 核心新功能
+### 3. CookieManager.py - Cookie 管理
 
 **職責:**
-- 自動尋找並讀取 Cookie 文件
+- 自動尋找並讀取 Cookie 文件（支援 JSON 及 Netscape 格式）
 - 解析 Cookie 中的認證資訊
 - 構建請求頭（Headers）
 
@@ -205,28 +219,32 @@ class CookieManager:
     COOKIE_FILENAMES = [
         'www.jvid.com_cookies.json',
         'jvid_cookies.json',
-        'cookies.json'
+        'cookies.json',
+        'cookies.txt',  # Netscape HTTP Cookie File 格式
     ]
-    
+
     def __init__(self, base_path: Optional[str] = None):
         # 初始化基礎路徑
-        
+
     def find_cookie_file(self) -> Optional[Path]:
         # 尋找 cookie 文件
-        
+
+    def _parse_netscape_cookies(self, content: str, domain_filter: str) -> list:
+        # 解析 Netscape HTTP Cookie File 格式 (cookies.txt)
+
     def load_cookies(self) -> Optional[list]:
-        # 載入 cookies
-        
+        # 載入 cookies（自動偵測 JSON 或 Netscape 格式）
+
     def extract_auth_info(self, cookies: list) -> Tuple:
         # 提取 authorization 和 cookie 字串
-        
+
     def get_headers(self, user_agent: str) -> Dict:
         # 獲取完整請求頭
 ```
 
 **工作流程:**
-1. 在專案目錄中搜尋 cookie 文件
-2. 讀取並解析 JSON 格式的 cookies
+1. 在專案目錄中搜尋 cookie 文件（根目錄及 `cookies/` 子目錄）
+2. 根據副檔名自動選擇解析方式（`.json` 或 `.txt` Netscape 格式）
 3. 從 `auth` cookie 提取 token
 4. 構建完整的 Cookie 字串
 5. 返回包含認證資訊的 headers
@@ -263,8 +281,7 @@ class ParsingMediaLogic:
         self.network_manager = NetworkManager(...)
         self.content_detector = ContentDetector()
         
-    @staticmethod
-    def update_headers() -> dict:
+    def update_headers(self) -> dict:
         # 優先使用 CookieManager
         # 回退到 permissions.txt
         
@@ -413,11 +430,13 @@ CookieManager()
 find_cookie_file()
     ├─ 搜尋 www.jvid.com_cookies.json
     ├─ 搜尋 jvid_cookies.json
-    └─ 搜尋 cookies.json
+    ├─ 搜尋 cookies.json
+    └─ 搜尋 cookies.txt (Netscape 格式)
     ↓
 load_cookies()
-    ├─ 讀取 JSON 文件
-    ├─ 解析 JSON 結構
+    ├─ 偵測副檔名 (.json / .txt)
+    ├─ JSON → json.loads() 解析
+    ├─ TXT → _parse_netscape_cookies() 解析
     └─ 返回 cookie 列表
     ↓
 extract_auth_info(cookies)
@@ -457,7 +476,7 @@ class AudioProcessor:
 
 ### 添加新的 Cookie 文件格式支援
 
-修改 `CookieManager.py`：
+1. 在 `COOKIE_FILENAMES` 中添加新的文件名：
 
 ```python
 class CookieManager:
@@ -465,9 +484,12 @@ class CookieManager:
         'www.jvid.com_cookies.json',
         'jvid_cookies.json',
         'cookies.json',
-        'my_custom_cookies.json'  # 添加新格式
+        'cookies.txt',              # Netscape 格式（已支援）
+        'my_custom_cookies.json',   # 添加新檔名
     ]
 ```
+
+2. 若需支援新的文件格式，在 `load_cookies()` 中添加對應的解析邏輯（參考 `_parse_netscape_cookies()` 的實作方式）。
 
 ### 添加新的命令列參數
 

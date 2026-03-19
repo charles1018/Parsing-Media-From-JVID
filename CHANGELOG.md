@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Bug 修復與功能增強 (2026-03)
+
+#### Fixed
+- 🐛 **Windows 路徑尾部句點問題修復**
+  - Windows 會自動去除目錄名尾部的句點，導致截斷標記 `...` 被移除後路徑不一致
+  - `os.makedirs` 建立子目錄時拋出 `FileNotFoundError (WinError 3)`
+  - 修改 `get_target_title()` 移除尾部句點，改用 `(truncated)` 作為截斷標記
+  - 新增 `max_chars=80` 字元數限制，避免 Windows MAX_PATH 260 限制
+
+#### Added
+- 🍪 **cookies.txt (Netscape 格式) 支援**
+  - `CookieManager` 新增 `_parse_netscape_cookies()` 方法
+  - 支援標準 Netscape HTTP Cookie File 格式
+  - 自動偵測 `.txt` 副檔名並使用對應解析器
+  - Cookie 文件搜尋順序新增 `cookies.txt`
+
+#### Changed
+- ♻️ **`update_headers()` 重構為實例方法**
+  - 從 `@staticmethod` 改為實例方法，可存取 `self.console` 進行輸出
+
+---
+
 ### 🌐 Web UI 功能 (2026-01)
 
 #### Added

@@ -10,7 +10,7 @@
 
 - 🎯 智能偵測頁面中的影片和圖片內容
 - 📦 自動下載所有可用的影片版本
-- 🔐 從 `cookies.json` 自動讀取認證資訊
+- 🔐 從 `cookies.json` 或 `cookies.txt` (Netscape 格式) 自動讀取認證資訊
 - 🔄 支援中斷後自動恢復下載 (實驗性功能)
 - 🧵 支援多執行緒下載（1-16 個執行緒，執行緒安全）
 - 🔍 詳細診斷功能幫助解決解析問題
@@ -37,7 +37,7 @@ uv sync
 
 ### 2. 準備 Cookies
 
-使用瀏覽器擴充套件（如 EditThisCookie）導出 JVID cookies，保存為 `www.jvid.com_cookies.json` 放在專案根目錄。
+使用瀏覽器擴充套件（如 EditThisCookie）導出 JVID cookies，保存為 `www.jvid.com_cookies.json` 或 `cookies.txt` (Netscape 格式) 放在專案根目錄。
 
 詳細步驟請參閱 [使用者指南](docs/USER_GUIDE.md#-準備-cookies)
 
@@ -166,7 +166,7 @@ Parsing-Media-From-JVID/
 │   ├── network/                  # 網路相關模組
 │   │   └── NetworkManager.py     # HTTP 請求管理
 │   └── utils/                    # 工具模組
-│       ├── CookieManager.py      # Cookie 自動管理
+│       ├── CookieManager.py      # Cookie 自動管理（支援 JSON 及 Netscape 格式）
 │       ├── ContentDetector.py    # 內容類型偵測
 │       └── ProgressManager.py    # 下載進度管理
 ├── scripts/                      # 執行腳本

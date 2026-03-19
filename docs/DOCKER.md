@@ -41,6 +41,7 @@ docker compose version
 - `www.jvid.com_cookies.json`（推薦）
 - `jvid_cookies.json`
 - `cookies.json`
+- `cookies.txt`（Netscape HTTP Cookie File 格式）
 
 ### 2. 建構映像
 
@@ -238,6 +239,7 @@ AUTO_RESUME=true
 - `www.jvid.com_cookies.json`
 - `jvid_cookies.json`
 - `cookies.json`
+- `cookies.txt`（Netscape HTTP Cookie File 格式）
 
 只需將 Cookie 檔案放在專案根目錄即可。
 
