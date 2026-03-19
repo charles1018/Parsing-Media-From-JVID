@@ -89,13 +89,14 @@ class ParsingMediaLogic:
             return {"user-agent": user_agent}
 
     @staticmethod
-    def get_target_title(soup: BeautifulSoup, max_bytes: int = 200) -> str:
+    def get_target_title(soup: BeautifulSoup, max_bytes: int = 200, max_chars: int = 80) -> str:
         """
         取得頁面標題並清理不合法字符
 
         Args:
             soup: BeautifulSoup 物件
             max_bytes: 最大位元組數（預設 200，Linux 限制為 255）
+            max_chars: 最大字元數（預設 80，避免 Windows MAX_PATH 260 限制）
 
         Returns:
             清理後的標題字串
@@ -105,11 +106,25 @@ class ParsingMediaLogic:
             get_title = get_title.replace(symbol, "")
 
         # 限制檔案名稱長度（避免超過檔案系統限制）
+        truncated = False
+
+        # 先按字元數截斷（主要為 Windows MAX_PATH 260 限制）
+        if len(get_title) > max_chars:
+            get_title = get_title[:max_chars].rstrip()
+            truncated = True
+
+        # 再按位元組數截斷（Linux 檔名限制為 255 bytes）
         encoded = get_title.encode("utf-8")
         if len(encoded) > max_bytes:
-            # 截斷並確保不會截斷 UTF-8 多位元組字元
-            truncated = encoded[:max_bytes].decode("utf-8", errors="ignore")
-            get_title = truncated.rstrip() + "..."
+            get_title = encoded[:max_bytes].decode("utf-8", errors="ignore").rstrip()
+            truncated = True
+
+        # 移除尾部的句點（Windows 會自動去除目錄名尾部的句點，
+        # 導致路徑不一致，無法在該目錄下建立子目錄）
+        get_title = get_title.rstrip(".")
+
+        if truncated:
+            get_title += "(truncated)"
 
         return get_title
 
