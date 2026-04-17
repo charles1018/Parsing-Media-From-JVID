@@ -4,9 +4,11 @@ Update Time: 2025-03-22
 圖片處理器 - 負責處理圖片的下載
 """
 
+import hashlib
 import os
 import random
 import time
+from threading import Lock
 
 from .BaseProcessor import BaseProcessor
 
@@ -29,6 +31,8 @@ class ImageProcessor(BaseProcessor):
             console: 控制台物件
         """
         super().__init__(network_manager, path, console)
+        self.seen_image_hashes = set()
+        self.hash_lock = Lock()
 
     def process(self, urls):
         """
@@ -53,8 +57,12 @@ class ImageProcessor(BaseProcessor):
             self.console.print("沒有找到圖片URL")
             return 0
 
-        self.todo_list = image_urls
+        self.todo_list = self._deduplicate_urls(image_urls)
         self.count = 0
+
+        duplicate_count = len(image_urls) - len(self.todo_list)
+        if duplicate_count > 0:
+            self.console.print(f"已略過 {duplicate_count} 個重複圖片URL")
 
         self.console.print(f"偵測到 {len(self.todo_list)} 個圖片")
 
@@ -86,6 +94,12 @@ class ImageProcessor(BaseProcessor):
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
+                content_hash = hashlib.sha256(res.content).hexdigest()
+                with self.hash_lock:
+                    if content_hash in self.seen_image_hashes:
+                        return 0
+                    self.seen_image_hashes.add(content_hash)
+
                 # 使用基礎類別的執行緒安全計數器
                 current_count = self.get_next_count()
 
@@ -96,3 +110,17 @@ class ImageProcessor(BaseProcessor):
         except Exception as e:
             self.console.print(f"處理圖片檔案錯誤: {type(e).__name__}: {str(e)}")
         return -1
+
+    @staticmethod
+    def _deduplicate_urls(image_urls):
+        """按原始順序移除重複圖片 URL。"""
+        unique_urls = []
+        seen_urls = set()
+
+        for url in image_urls:
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            unique_urls.append(url)
+
+        return unique_urls

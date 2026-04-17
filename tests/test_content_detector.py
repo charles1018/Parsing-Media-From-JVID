@@ -257,6 +257,30 @@ class TestExtractImageUrls:
         assert "https://example.com/image2.jpg" in image_urls
         assert "https://example.com/image3.jpg" in image_urls
 
+    def test_extract_image_urls_no_duplicates(self, detector):
+        """測試圖片 URL 會依照原始順序去除重複"""
+        html = """
+        <html>
+            <body>
+                <div class="w-full lightbox_fancybox">
+                    <div data-src="https://example.com/image1.jpg"></div>
+                    <div data-src="https://example.com/image2.jpg"></div>
+                </div>
+                <div class="w-full lightbox_fancybox">
+                    <div data-src="https://example.com/image1.jpg"></div>
+                    <div data-src="https://example.com/image3.jpg"></div>
+                </div>
+            </body>
+        </html>
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        image_urls = detector.extract_image_urls(soup)
+        assert image_urls == [
+            "https://example.com/image1.jpg",
+            "https://example.com/image2.jpg",
+            "https://example.com/image3.jpg",
+        ]
+
     def test_extract_image_urls_empty(self, detector):
         """測試沒有圖片的頁面"""
         html = """

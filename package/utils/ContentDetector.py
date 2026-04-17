@@ -159,6 +159,7 @@ class ContentDetector:
             image_urls: 圖片URL列表
         """
         image_urls = []
+        seen_urls = set()
 
         # 從所有 lightbox_fancybox 中提取圖片URL
         # （第一個 div 可能是空的佔位元素，需遍歷全部）
@@ -166,8 +167,10 @@ class ContentDetector:
         for parent_div in image_divs:
             for div in parent_div.find_all("div"):
                 try:
-                    if div.get("data-src", "").startswith("https"):
-                        image_urls.append(div["data-src"])
+                    image_url = div.get("data-src", "")
+                    if image_url.startswith("https") and image_url not in seen_urls:
+                        seen_urls.add(image_url)
+                        image_urls.append(image_url)
                 except (AttributeError, TypeError, KeyError):
                     # div 可能沒有預期的屬性，跳過此元素
                     continue
