@@ -6,7 +6,6 @@ Cookie Manager - 自動讀取和管理 JVID cookies
 
 import json
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 
 class CookieManager:
@@ -20,7 +19,7 @@ class CookieManager:
         "cookies.txt",  # Netscape HTTP Cookie File 格式
     ]
 
-    def __init__(self, base_path: Optional[str] = None):
+    def __init__(self, base_path: str | None = None):
         """
         初始化 Cookie Manager
 
@@ -29,7 +28,7 @@ class CookieManager:
         """
         self.base_path = Path(base_path) if base_path else Path.cwd()
 
-    def find_cookie_file(self) -> Optional[Path]:
+    def find_cookie_file(self) -> Path | None:
         """
         在專案目錄中尋找 cookie 文件
 
@@ -53,7 +52,9 @@ class CookieManager:
                     return cookie_path
         return None
 
-    def _parse_netscape_cookies(self, content: str, domain_filter: str = "jvid.com") -> list:
+    def _parse_netscape_cookies(
+        self, content: str, domain_filter: str = "jvid.com"
+    ) -> list:
         """
         解析 Netscape HTTP Cookie File 格式（cookies.txt）
 
@@ -91,14 +92,16 @@ class CookieManager:
                         "hostOnly": flag.upper() != "TRUE",
                         "path": path,
                         "secure": secure.upper() == "TRUE",
-                        "expirationDate": int(expiration) if expiration.isdigit() else 0,
+                        "expirationDate": int(expiration)
+                        if expiration.isdigit()
+                        else 0,
                         "name": name,
                         "value": value,
                     }
                 )
         return cookies
 
-    def load_cookies(self) -> Optional[list]:
+    def load_cookies(self) -> list | None:
         """
         載入 cookie 文件內容
 
@@ -129,7 +132,7 @@ class CookieManager:
             print(f"警告: 無法讀取 cookie 文件: {e}")
             return None
 
-    def extract_auth_info(self, cookies: list) -> Tuple[Optional[str], Optional[str]]:
+    def extract_auth_info(self, cookies: list) -> tuple[str | None, str | None]:
         """
         從 cookie 列表中提取 authorization token 和完整 cookie 字串
 
@@ -171,7 +174,7 @@ class CookieManager:
 
         return auth_token, cookie_string
 
-    def get_headers(self, user_agent: str) -> Dict[str, str]:
+    def get_headers(self, user_agent: str) -> dict[str, str]:
         """
         獲取包含認證資訊的完整請求頭
 
@@ -205,7 +208,7 @@ class CookieManager:
         return headers
 
     @staticmethod
-    def print_cookie_info(headers: Dict[str, str]):
+    def print_cookie_info(headers: dict[str, str]):
         """
         輸出 cookie 資訊摘要（用於除錯）
 

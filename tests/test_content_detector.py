@@ -166,9 +166,7 @@ class TestExtractVideoUrls:
         video_urls, video_types = detector.extract_video_urls(html)
         assert len(video_urls) >= 1
         # 應該找到 div_m3u8_playlist 或 direct_regex_m3u8 類型
-        assert any(
-            t in video_types for t in ["div_m3u8_playlist", "direct_regex_m3u8"]
-        )
+        assert any(t in video_types for t in ["div_m3u8_playlist", "direct_regex_m3u8"])
 
     def test_extract_video_urls_regex(self, detector):
         """測試正則表達式提取 m3u8 URL"""

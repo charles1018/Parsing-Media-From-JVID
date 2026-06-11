@@ -8,7 +8,7 @@ Create Time: 2025-03-22
 import json
 import os
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -62,7 +62,7 @@ class DiagnosticMode:
         if self.verbose:
             print(f"[診斷] 開始診斷會話: {self.current_session_id} for {url}")
 
-    def log_step(self, step_name: str, details: Dict[str, Any]) -> None:
+    def log_step(self, step_name: str, details: dict[str, Any]) -> None:
         """
         記錄診斷步驟
 
@@ -85,7 +85,7 @@ class DiagnosticMode:
         if self.verbose:
             print(f"[診斷] 步驟 '{step_name}' 已記錄")
 
-    def analyze_page_structure(self, html_content: str) -> Dict[str, Any]:
+    def analyze_page_structure(self, html_content: str) -> dict[str, Any]:
         """
         分析頁面結構，尋找可能包含媒體URL的元素
 
@@ -166,7 +166,7 @@ class DiagnosticMode:
 
         return analysis_result
 
-    def log_extraction_attempt(self, method_name: str, result: Dict[str, Any]) -> None:
+    def log_extraction_attempt(self, method_name: str, result: dict[str, Any]) -> None:
         """
         記錄URL提取嘗試
 
@@ -194,10 +194,10 @@ class DiagnosticMode:
 
     def compare_with_working_examples(
         self,
-        working_urls: List[str],
+        working_urls: list[str],
         current_html: str,
         network_manager: Optional["NetworkManager"] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         將當前頁面與已知工作的例子進行比較
 
@@ -275,7 +275,7 @@ class DiagnosticMode:
 
         return comparison_result
 
-    def get_headers_from_main_program(self) -> Dict[str, str]:
+    def get_headers_from_main_program(self) -> dict[str, str]:
         """
         從主程序獲取請求頭，使用 CookieManager 以確保與主程式一致
 
@@ -315,8 +315,8 @@ class DiagnosticMode:
         return {"user-agent": NetworkManager.get_random_user_agent()}
 
     def suggest_extraction_strategies(
-        self, analysis_result: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, analysis_result: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """
         基於頁面分析建議提取策略
 
@@ -387,7 +387,7 @@ class DiagnosticMode:
 
     def test_extraction_method(
         self, method_name: str, html_content: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         測試特定的提取方法
 
@@ -480,8 +480,8 @@ class DiagnosticMode:
     def finalize_session(
         self,
         success: bool,
-        final_url: Optional[str] = None,
-        notes: Optional[str] = None,
+        final_url: str | None = None,
+        notes: str | None = None,
     ) -> None:
         """
         完成診斷會話並保存結果
@@ -519,7 +519,7 @@ class DiagnosticMode:
         self.current_session_id = None
         self.diagnostic_data = {}
 
-    def generate_report(self, session_id: Optional[str] = None) -> str:
+    def generate_report(self, session_id: str | None = None) -> str:
         """
         生成診斷報告
 
@@ -603,7 +603,7 @@ class DiagnosticMode:
         return "\n".join(report)
 
     @staticmethod
-    def extract_failed_urls_from_log(log_path: str) -> List[str]:
+    def extract_failed_urls_from_log(log_path: str) -> list[str]:
         """
         從下載日誌中提取失敗的URL
 

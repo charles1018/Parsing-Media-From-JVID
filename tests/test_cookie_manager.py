@@ -171,7 +171,9 @@ www.jvid.com	FALSE	/api	FALSE	0	user_pref	dark_mode
         assert cookies[2]["domain"] == "www.jvid.com"
         assert cookies[2]["hostOnly"] is True  # FALSE flag 表示只有該主機可存取
 
-    def test_load_cookies_txt_format(self, tmp_path, sample_netscape_cookies, monkeypatch):
+    def test_load_cookies_txt_format(
+        self, tmp_path, sample_netscape_cookies, monkeypatch
+    ):
         """測試載入 Netscape 格式 cookies.txt"""
         cookie_path = tmp_path / "cookies.txt"
         cookie_path.write_text(sample_netscape_cookies, encoding="utf-8")
