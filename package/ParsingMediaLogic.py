@@ -35,6 +35,10 @@ class ParsingMediaLogic:
         self.thread_count = (
             obj.thread_count if hasattr(obj, "thread_count") else 1
         )  # 從命令列參數獲取執行緒數量，預設為1
+        self.interactive = getattr(
+            obj, "interactive", True
+        )  # 是否允許以 input() 詢問使用者（Web UI 應設為 False）
+        self.download_complete = False  # 本次下載是否全部完成
 
         # 記錄下載
         self.log_record()
@@ -296,6 +300,19 @@ class ParsingMediaLogic:
         except Exception as e:
             self.console.print(f"[診斷模式] 完成診斷時出錯: {str(e)}")
 
+    def _save_remaining(self, remaining):
+        """
+        進度回呼：處理器在批次下載期間回報剩餘項目時，寫入進度檔以支援續傳
+
+        參數:
+            remaining: 尚未完成的下載項目列表
+        """
+        if remaining:
+            self.progress_manager.save_progress(
+                {"url": self.url, "type": self.type, "todo_list": remaining},
+                quiet=True,
+            )
+
     def identify_type_operation(self):
         """智能識別內容類型並處理下載"""
         # 使用網路模組獲取初始頁面
@@ -333,6 +350,10 @@ class ParsingMediaLogic:
         # 如果啟用了診斷模式，則分析頁面
         if has_video and self.diagnostic_enabled and self.diagnostic_mode:
             self.diagnostic_analyze_page(self.url, res.text)
+
+        # 追蹤各類型內容是否全部下載完成（決定是否清除進度檔）
+        video_complete = True
+        image_complete = True
 
         # 處理影片內容
         if has_video:
@@ -379,6 +400,7 @@ class ParsingMediaLogic:
             # 檢查是否有找到任何影片URL
             if not video_urls:
                 self.console.print("未找到任何 m3u8 檔案")
+                video_complete = False
 
                 # 診斷模式記錄失敗結果
                 if self.diagnostic_enabled and self.diagnostic_mode:
@@ -390,8 +412,12 @@ class ParsingMediaLogic:
                 )
                 # 設定執行緒數量
                 video_processor.MAX_WORKERS = self.thread_count
+                # 掛載進度回呼以支援續傳
+                video_processor.progress_callback = self._save_remaining
                 self.console.print(f"使用 {self.thread_count} 個執行緒下載影片")
-                video_processor.process_video_urls(video_urls, video_types)
+                video_complete = video_processor.process_video_urls(
+                    video_urls, video_types
+                )
 
         # 處理圖片內容
         if has_image:
@@ -411,8 +437,12 @@ class ParsingMediaLogic:
             )
             # 設定執行緒數量
             image_processor.MAX_WORKERS = self.thread_count
+            # 掛載進度回呼以支援續傳
+            image_processor.progress_callback = self._save_remaining
             self.console.print(f"使用 {self.thread_count} 個執行緒下載圖片")
-            image_processor.process_images(image_urls)
+            image_complete = image_processor.process_images(image_urls)
+
+        self.download_complete = video_complete and image_complete
 
     def main(self):
         """主要程序入口點"""
@@ -421,17 +451,22 @@ class ParsingMediaLogic:
 
         # 檢查是否有未完成的下載
         resume_data = self.progress_manager.check_and_resume_download(
-            self.url, self.type, self.auto_resume
+            self.url, self.type, self.auto_resume, self.interactive
         )
         if resume_data:
-            self.console.print("[yellow]發現未完成的下載記錄[/yellow]")
             self.console.print(
-                "[yellow]注意: 續傳功能尚未完成實作，將重新開始下載[/yellow]"
+                "[yellow]發現未完成的下載記錄，將跳過已下載的檔案繼續下載[/yellow]"
             )
-            # TODO: 未來實作續傳功能時，應根據 resume_data 恢復下載
-            # 目前直接開始新的下載
 
-        # 開始下載（無論是否有續傳資料）
+        # 開始下載：重新解析頁面（避免 m3u8 / 金鑰過期），已完成的檔案會自動跳過
         self.identify_type_operation()
+
+        # 全部完成則清除進度檔，否則保留以供下次續傳
+        if self.download_complete:
+            self.progress_manager.delete_progress_file()
+        else:
+            self.console.print(
+                "[yellow]下載未全部完成，重新執行（建議加上 -a）即可續傳[/yellow]"
+            )
 
         self.progress_bar("Finish_Task")

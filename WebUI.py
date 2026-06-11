@@ -36,6 +36,8 @@ class DownloadConfig:
     auto_resume: bool = True
     diagnostic_mode: bool = False
     thread_count: int = 1
+    # Web UI 無法以 input() 詢問使用者，未勾選自動續傳時直接重新檢查下載
+    interactive: bool = False
 
 
 def validate_url(url: str) -> tuple[bool, str]:
@@ -100,7 +102,10 @@ def download_media(
         progress(0.1, desc="解析頁面中...")
         logic.main()
 
-        yield "✅ 下載完成！"
+        if logic.download_complete:
+            yield "✅ 下載完成！"
+        else:
+            yield "⚠️ 下載未全部完成，請再次執行（勾選自動續傳）以繼續下載"
 
     except KeyboardInterrupt:
         yield "⚠️ 下載已被使用者中斷"

@@ -51,14 +51,15 @@ class ImageProcessor(BaseProcessor):
             image_urls: 圖片URL列表
 
         返回:
-            成功下載的圖片數量
+            全部圖片皆下載完成返回 True，否則返回 False
         """
         if not image_urls:
             self.console.print("沒有找到圖片URL")
-            return 0
+            return True
 
-        self.todo_list = self._deduplicate_urls(image_urls)
-        self.count = 0
+        # 以 (索引, URL) 形式記錄，索引同時作為檔名，支援續傳跳過
+        unique_urls = self._deduplicate_urls(image_urls)
+        self.todo_list = list(enumerate(unique_urls))
 
         duplicate_count = len(image_urls) - len(self.todo_list)
         if duplicate_count > 0:
@@ -66,27 +67,63 @@ class ImageProcessor(BaseProcessor):
 
         self.console.print(f"偵測到 {len(self.todo_list)} 個圖片")
 
+        # 續傳時：載入既有圖片的內容雜湊，維持跨執行的內容去重
+        self._load_existing_hashes()
+
         # 使用基礎類別的批次下載功能
-        self.batch_download(
+        failed_items = self.batch_download(
             todo_list=self.todo_list,
             download_func=self._download_single_image,
             batch_size=self.BATCH_SIZE,
             desc="圖片下載進度",
         )
 
-        self.console.print(f"圖片下載完成，共下載 {self.count} 張圖片")
-        return self.count
+        success_count = len(self.todo_list) - len(failed_items)
+        self.console.print(
+            f"圖片下載完成，共完成 {success_count}/{len(self.todo_list)} 張圖片"
+        )
+        if failed_items:
+            self.console.print(
+                f"[yellow]有 {len(failed_items)} 張圖片下載失敗，"
+                f"重新執行（建議加上 -a）即可續傳[/yellow]"
+            )
+        return not failed_items
 
-    def _download_single_image(self, url):
+    def _load_existing_hashes(self):
+        """載入儲存目錄中既有圖片的內容雜湊（續傳時維持內容去重）"""
+        try:
+            file_names = os.listdir(self.path)
+        except OSError:
+            return
+
+        for file_name in file_names:
+            if not file_name.endswith(".jpg"):
+                continue
+            file_path = os.path.join(self.path, file_name)
+            try:
+                with open(file_path, "rb") as f:
+                    content_hash = hashlib.sha256(f.read()).hexdigest()
+                self.seen_image_hashes.add(content_hash)
+            except OSError:
+                continue
+
+    def _download_single_image(self, item):
         """
         下載單個圖片（供 batch_download 調用）
 
         參數:
-            url: 圖片URL
+            item: (索引, URL) 元組，索引作為圖片檔名
 
         返回:
             成功返回 0，失敗返回 -1
         """
+        index, url = item
+        file_path = os.path.join(self.path, f"{index}.jpg")
+
+        # 續傳時：圖片已存在則跳過（檔案以原子改名寫入，存在即代表完整）
+        if os.path.exists(file_path):
+            return 0
+
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
             time.sleep(random.uniform(self.DELAY_MIN, self.DELAY_MAX))
@@ -100,12 +137,11 @@ class ImageProcessor(BaseProcessor):
                         return 0
                     self.seen_image_hashes.add(content_hash)
 
-                # 使用基礎類別的執行緒安全計數器
-                current_count = self.get_next_count()
-
-                file_path = os.path.join(self.path, f"{current_count}.jpg")
-                with open(file_path, "wb") as f:
+                # 先寫入暫存檔再原子改名，避免中斷時留下不完整的圖片
+                temp_path = file_path + ".tmp"
+                with open(temp_path, "wb") as f:
                     f.write(res.content)
+                os.replace(temp_path, file_path)
                 return 0
         except Exception as e:
             self.console.print(f"處理圖片檔案錯誤: {type(e).__name__}: {str(e)}")

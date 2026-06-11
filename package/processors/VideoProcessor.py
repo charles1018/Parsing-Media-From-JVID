@@ -51,21 +51,25 @@ class VideoProcessor(BaseProcessor):
             video_types: 影片類型列表
 
         返回:
-            成功處理的URL數量
+            全部版本皆完成（下載並合併）返回 True，否則返回 False
         """
         self.console.print(f"找到 {len(video_urls)} 個不同版本的影片，將下載全部版本")
-        for i, (url, vtype) in enumerate(zip(video_urls, video_types)):
+        for i, (url, vtype) in enumerate(zip(video_urls, video_types, strict=True)):
             self.console.print(f"[{i + 1}] 類型: {vtype}, URL: {url}")
 
-        success_count = 0
+        all_complete = True
         # 依次處理每個影片URL
         for i, url in enumerate(video_urls):
             # 為每個版本創建不同的子目錄
-            version_path = os.path.join(
-                self.base_path, f"版本_{i + 1}_{video_types[i]}"
-            )
+            folder_name = f"版本_{i + 1}_{video_types[i]}"
+            version_path = os.path.join(self.base_path, folder_name)
             if not os.path.exists(version_path):
                 os.makedirs(version_path)
+
+            # 續傳時：若該版本已合併出 MP4，直接略過
+            if os.path.exists(os.path.join(version_path, folder_name + ".mp4")):
+                self.console.print(f"第 {i + 1} 個版本已下載完成，略過")
+                continue
 
             self.console.print(f"\n正在處理第 {i + 1} 個版本: {video_types[i]}")
 
@@ -76,6 +80,7 @@ class VideoProcessor(BaseProcessor):
             res = self.network_manager.request_with_retry(url)
             if res is None:
                 self.console.print(f"無法獲取 m3u8 檔案: {url}")
+                all_complete = False
                 continue
 
             with open(os.path.join(version_path, "media.m3u8"), "w") as f:
@@ -109,40 +114,52 @@ class VideoProcessor(BaseProcessor):
             res = self.network_manager.request_with_retry(self.base_url + key)
             if res is None:
                 self.console.print(f"無法獲取解密金鑰: {self.base_url + key}")
+                all_complete = False
                 continue
 
             # 儲存 AES 金鑰（每個執行緒會建立自己的解密器以確保執行緒安全）
             self.aes_key = res.content
 
-            # 準備下載分段列表
+            # 準備下載分段列表，以 (索引, URL) 形式記錄，
+            # 索引同時作為分段檔名，確保合併順序正確並支援續傳跳過
             with open(os.path.join(version_path, "media.m3u8")) as f:
                 media = list(f)
+            segments = [
+                i for i in "".join(media).split("\n") if "#EXT" not in i and i != ""
+            ]
             self.todo_list = [
-                self.base_url + i
-                for i in "".join(media).split("\n")
-                if "#EXT" not in i and i != ""
+                (index, self.base_url + segment)
+                for index, segment in enumerate(segments)
             ]
 
-            # 重置計數器
-            self.count = 0
-
             # 下載 TS 分段（傳遞 version_path 而非修改實例變數）
-            self.download_ts_segments(save_path=version_path)
+            failed_items = self.download_ts_segments(save_path=version_path)
 
-            # 創建合併文件列表
+            if failed_items:
+                self.console.print(
+                    f"[yellow]第 {i + 1} 個版本有 {len(failed_items)} 個分段"
+                    f"下載失敗，保留暫存檔以便續傳[/yellow]"
+                )
+                all_complete = False
+                continue
+
+            # 創建合併文件列表（依分段索引順序）
             with open(os.path.join(version_path, "media.txt"), "w") as f:
-                for i in range(0, self.count):
-                    f.write(f"file '{i}.ts'\n")
+                for index in range(len(self.todo_list)):
+                    f.write(f"file '{index}.ts'\n")
 
             # 合併 ts 檔並轉為 mp4（傳遞 version_path 而非修改實例變數）
             self.combine_ts_to_mp4(save_path=version_path)
 
-            success_count += 1
+        # 全部版本完成後才刪除暫存檔，否則保留以供續傳
+        if all_complete:
+            self.remove_all_temp_files()
+        else:
+            self.console.print(
+                "[yellow]部分影片版本未完成，重新執行（建議加上 -a）即可續傳[/yellow]"
+            )
 
-        # 下載完成後刪除暫存檔
-        self.remove_all_temp_files()
-
-        return success_count
+        return all_complete
 
     def process(self, urls):
         """
@@ -160,6 +177,9 @@ class VideoProcessor(BaseProcessor):
 
         參數:
             save_path: 保存路徑（如未指定則使用 self.base_path）
+
+        返回:
+            下載失敗的 (索引, URL) 項目列表，全部成功時為空列表
         """
         if save_path is None:
             save_path = self.base_path
@@ -167,19 +187,19 @@ class VideoProcessor(BaseProcessor):
         # 使用 partial 綁定 save_path 參數
         download_func = partial(self._download_single_ts, save_path=save_path)
 
-        self.batch_download(
+        return self.batch_download(
             todo_list=self.todo_list,
             download_func=download_func,
             batch_size=self.BATCH_SIZE,
             desc="Downloads Schedule",
         )
 
-    def _download_single_ts(self, url, save_path=None):
+    def _download_single_ts(self, item, save_path=None):
         """
         下載並解密單個 TS 分段檔案（供 batch_download 調用）
 
         參數:
-            url: TS 分段的 URL
+            item: (索引, URL) 元組，索引作為分段檔名
             save_path: 保存路徑（如未指定則使用 self.base_path）
 
         返回:
@@ -188,6 +208,13 @@ class VideoProcessor(BaseProcessor):
         if save_path is None:
             save_path = self.base_path
 
+        index, url = item
+        ts_file_path = os.path.join(save_path, f"{index}.ts")
+
+        # 續傳時：分段已存在則跳過（檔案以原子改名寫入，存在即代表完整）
+        if os.path.exists(ts_file_path):
+            return 0
+
         try:
             # 添加輕微隨機延遲，模擬更自然的人類行為
             time.sleep(random.uniform(self.DELAY_MIN, self.DELAY_MAX))
@@ -195,16 +222,15 @@ class VideoProcessor(BaseProcessor):
             # 使用重試機制下載
             res = self.network_manager.request_with_retry(url)
             if res:
-                # 使用基礎類別的執行緒安全計數器
-                current_count = self.get_next_count()
-
                 # 每個執行緒建立自己的 AES 解密器（AES Cipher 不是執行緒安全的）
                 cryptor = AES.new(self.aes_key, AES.MODE_CBC)
                 decrypted_data = cryptor.decrypt(res.content)
 
-                ts_file_path = os.path.join(save_path, f"{current_count}.ts")
-                with open(ts_file_path, "wb") as f:
+                # 先寫入暫存檔再原子改名，避免中斷時留下不完整的分段
+                temp_path = ts_file_path + ".tmp"
+                with open(temp_path, "wb") as f:
                     f.write(decrypted_data)
+                os.replace(temp_path, ts_file_path)
                 return 0
         except Exception as e:
             self.console.print(f"處理 TS 檔案錯誤: {type(e).__name__}: {str(e)}")
@@ -260,7 +286,7 @@ class VideoProcessor(BaseProcessor):
                     version_path = os.path.join(root, dir_name)
                     try:
                         for file in os.listdir(version_path):
-                            if file.split(".")[-1] in ["ts", "m3u8", "txt"]:
+                            if file.split(".")[-1] in ["ts", "m3u8", "txt", "tmp"]:
                                 files_to_delete.append(os.path.join(version_path, file))
                     except OSError as e:
                         self.console.print(f"列舉目錄時出錯 {version_path}: {e}")

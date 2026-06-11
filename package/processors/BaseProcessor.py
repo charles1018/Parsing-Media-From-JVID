@@ -41,6 +41,8 @@ class BaseProcessor(ABC):
         self.count_lock = Lock()  # 保護計數器的執行緒鎖
         self.todo_list = []
         self.MAX_WORKERS = self.DEFAULT_MAX_WORKERS
+        # 進度回呼：接收「尚未完成的項目列表」，供續傳功能儲存進度
+        self.progress_callback = None
 
     def batch_download(
         self, todo_list, download_func, batch_size=None, desc="下載進度"
@@ -49,10 +51,13 @@ class BaseProcessor(ABC):
         通用批次下載邏輯
 
         參數:
-            todo_list: 待下載項目列表
+            todo_list: 待下載項目列表（項目必須可雜湊，如字串或元組）
             download_func: 下載單個項目的函數
             batch_size: 每批次處理的數量（預設使用 DEFAULT_BATCH_SIZE）
             desc: 進度條描述文字
+
+        返回:
+            下載失敗（或未處理）的項目列表，全部成功時為空列表
         """
         if batch_size is None:
             batch_size = self.DEFAULT_BATCH_SIZE
@@ -62,6 +67,12 @@ class BaseProcessor(ABC):
 
         self.console.print(f"開始下載，執行緒數: {current_workers}")
 
+        # 追蹤已完成的項目，用於計算剩餘清單（續傳用）
+        completed = set()
+
+        # 下載開始前先儲存完整清單，確保中斷時能偵測到未完成的下載
+        self._notify_progress(todo_list, completed)
+
         # 創建進度條
         schedule = tqdm(total=len(todo_list), desc=desc)
 
@@ -70,35 +81,54 @@ class BaseProcessor(ABC):
             todo_list[i : i + batch_size] for i in range(0, len(todo_list), batch_size)
         ]
 
-        for chunk_index, current_chunk in enumerate(todo_chunks):
-            with ThreadPoolExecutor(max_workers=current_workers) as executor:
-                # 提交當前批次的任務
-                future_to_item = {
-                    executor.submit(download_func, item): item for item in current_chunk
-                }
+        try:
+            for chunk_index, current_chunk in enumerate(todo_chunks):
+                with ThreadPoolExecutor(max_workers=current_workers) as executor:
+                    # 提交當前批次的任務
+                    future_to_item = {
+                        executor.submit(download_func, item): item
+                        for item in current_chunk
+                    }
 
-                # 處理完成的任務
-                for future in as_completed(future_to_item):
-                    try:
-                        # 獲取任務結果
-                        ret = future.result(timeout=self.TASK_TIMEOUT)
-                        if ret == 0:  # 成功
-                            schedule.update(1)
-                    except Exception as e:
-                        self.console.print(
-                            f"處理任務時出錯: {type(e).__name__}: {str(e)}"
-                        )
+                    # 處理完成的任務
+                    for future in as_completed(future_to_item):
+                        item = future_to_item[future]
+                        try:
+                            # 獲取任務結果
+                            ret = future.result(timeout=self.TASK_TIMEOUT)
+                            if ret == 0:  # 成功
+                                completed.add(item)
+                                schedule.update(1)
+                        except Exception as e:
+                            self.console.print(
+                                f"處理任務時出錯: {type(e).__name__}: {str(e)}"
+                            )
 
-            # 顯示批次完成情況
-            if chunk_index < len(todo_chunks) - 1:
-                self.console.print(f"批次 {chunk_index + 1}/{len(todo_chunks)} 完成")
-                # 批次之間的間隔，模擬人類瀏覽行為
-                wait_time = random.uniform(self.BATCH_WAIT_MIN, self.BATCH_WAIT_MAX)
-                self.console.print(f"休息 {wait_time:.1f} 秒以避免限流...")
-                time.sleep(wait_time)
+                # 每批次結束後更新進度檔
+                self._notify_progress(todo_list, completed)
 
-        # 完成進度條
-        schedule.close()
+                # 顯示批次完成情況
+                if chunk_index < len(todo_chunks) - 1:
+                    self.console.print(
+                        f"批次 {chunk_index + 1}/{len(todo_chunks)} 完成"
+                    )
+                    # 批次之間的間隔，模擬人類瀏覽行為
+                    wait_time = random.uniform(self.BATCH_WAIT_MIN, self.BATCH_WAIT_MAX)
+                    self.console.print(f"休息 {wait_time:.1f} 秒以避免限流...")
+                    time.sleep(wait_time)
+        finally:
+            # 完成進度條；中斷（如 Ctrl+C）時也要保存目前進度
+            schedule.close()
+            self._notify_progress(todo_list, completed)
+
+        return [item for item in todo_list if item not in completed]
+
+    def _notify_progress(self, todo_list, completed):
+        """透過進度回呼回報尚未完成的項目"""
+        if self.progress_callback is None:
+            return
+        remaining = [item for item in todo_list if item not in completed]
+        self.progress_callback(remaining)
 
     def get_next_count(self):
         """

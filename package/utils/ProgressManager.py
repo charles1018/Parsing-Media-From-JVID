@@ -31,12 +31,13 @@ class ProgressManager:
         """
         return datetime.now(timezone(timedelta(hours=8)))
 
-    def save_progress(self, data):
+    def save_progress(self, data, quiet=False):
         """
         儲存下載進度
 
         參數:
             data: 要保存的數據字典
+            quiet: 為 True 時不輸出儲存訊息（供下載過程中的週期性儲存使用）
 
         返回:
             成功返回 True，失敗返回 False
@@ -54,7 +55,8 @@ class ProgressManager:
             with open(progress_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            self.console.print(f"下載進度已儲存至: {progress_file}")
+            if not quiet:
+                self.console.print(f"下載進度已儲存至: {progress_file}")
             return True
         except Exception as e:
             self.console.print(f"儲存進度失敗: {type(e).__name__}: {str(e)}")
@@ -100,7 +102,9 @@ class ProgressManager:
             self.console.print(f"載入進度失敗: {type(e).__name__}: {str(e)}")
             return None
 
-    def check_and_resume_download(self, url, type_name="auto", auto_resume=False):
+    def check_and_resume_download(
+        self, url, type_name="auto", auto_resume=False, interactive=True
+    ):
         """
         檢查是否有未完成的下載，並根據設定決定是否自動恢復或詢問使用者
 
@@ -108,6 +112,7 @@ class ProgressManager:
             url: 當前URL
             type_name: 媒體類型
             auto_resume: 是否自動恢復
+            interactive: 是否允許以 input() 詢問使用者（Web UI 環境應設為 False）
 
         返回:
             有可恢復的進度返回進度數據，否則返回None
@@ -133,6 +138,9 @@ class ProgressManager:
                     if auto_resume:
                         self.console.print("自動恢復模式已啟用，繼續上次下載")
                         return progress_data
+                    elif not interactive:
+                        # 非互動環境（如 Web UI）無法詢問，視為不恢復
+                        self.console.print("未啟用自動續傳，將重新檢查並下載缺漏檔案")
                     else:
                         # 詢問使用者是否繼續下載
                         resume_choice = (
