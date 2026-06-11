@@ -1,6 +1,6 @@
 [project]
 name = "parsing-media-from-jvid"
-version = "1.0.0"
+version = "1.1.0"
 description = "JVID 媒體下載工具 - 支援影片和圖片自動下載"
 readme = "README.md"
 requires-python = ">=3.10"

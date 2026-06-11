@@ -1,6 +1,6 @@
 # JVID 媒體下載工具 🎬
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/uv-package%20manager-green.svg)](https://github.com/astral-sh/uv)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -20,7 +20,7 @@
 
 ## 📋 系統需求
 
-- **Python**: 3.8 或更高版本
+- **Python**: 3.10 或更高版本
 - **uv**: 已安裝（透過 scoop 或其他方式）
 - **作業系統**: Windows / macOS / Linux
 - **FFmpeg**: 用於影片處理（可選）

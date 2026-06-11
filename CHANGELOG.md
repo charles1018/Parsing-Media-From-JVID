@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-06-11
+
+### ⏯️ 中斷續傳功能 (2026-06)
+
+#### Added
+- ⏯️ **實作中斷續傳**（原為 TODO，CLI `-a` 與 Web UI「自動續傳」選項至此真正生效）
+  - 下載期間定期將剩餘項目寫入 `download_progress.json`，中斷（含 Ctrl+C）時保留進度
+  - 續傳時重新解析頁面（避免 m3u8 / AES 金鑰 token 過期），自動跳過已完成的檔案
+  - 影片：已合併出 MP4 的版本整個略過；已下載的 TS 分段不重抓；分段未全數成功時保留暫存檔且不執行合併
+  - 圖片：已存在的圖片直接跳過，並載入既有圖片雜湊以維持跨執行的內容去重
+  - 全部完成後自動刪除進度檔；未完成時提示可加 `-a` 續傳
+  - Web UI 為非互動環境，未勾選自動續傳時不再可能卡在終端機詢問（新增 `interactive` 旗標）
+
+#### Fixed
+- 🐛 **多執行緒下載影片時分段順序錯亂**
+  - 原本 TS 分段以「完成順序」計數器命名，多執行緒下合併出的影片順序可能錯誤
+  - 改以 m3u8 分段索引命名（圖片同步改為索引命名），合併順序永遠正確
+- 🛡️ **避免中斷時留下不完整檔案**
+  - TS 分段與圖片改為先寫入 `.tmp` 再原子改名，檔案存在即代表完整，續傳跳過才安全
+
+---
+
+### 🎞️ 影片解析與圖片下載改進 (2026-03 ~ 2026-04)
+
+#### Added
+- ✨ **從 Nuxt/Vue payload 提取 m3u8 URL**
+  - 因應 JVID 改版，支援從頁面內嵌的 Nuxt/Vue payload 解析影片來源
+  - 支援下載頁面上的全部影片版本
+
+#### Fixed
+- 🐛 **emoji 標題導致程式崩潰及圖片無法偵測**
+  - 標題含 emoji 時，Windows 主控台編碼（如 cp950）拋出 `UnicodeEncodeError`
+  - 修正圖片偵測邏輯
+- 🐛 **避免重複下載圖片**
+  - URL 去重（保留原始順序）+ 內容 SHA-256 雜湊去重，相同圖片只保存一份
+
+---
+
 ### 🐛 Bug 修復與功能增強 (2026-03)
 
 #### Fixed
@@ -363,5 +403,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/charles1018/Parsing-Media-From-JVID/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/charles1018/Parsing-Media-From-JVID/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/charles1018/Parsing-Media-From-JVID/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/charles1018/Parsing-Media-From-JVID/releases/tag/v1.0.0
