@@ -207,7 +207,11 @@ Parsing-Media-From-JVID/
 │   └── jvid-download.*           # 本地執行腳本
 └── tests/                        # 測試檔案
     ├── test_cookie_manager.py    # Cookie 測試
-    └── test_path_fix.py          # 路徑處理測試
+    ├── test_content_detector.py  # 內容偵測測試
+    ├── test_image_processor.py   # 圖片處理測試
+    ├── test_network_manager.py   # 網路重試測試
+    ├── test_progress_manager.py  # 進度管理測試
+    └── test_video_processor.py   # 影片合併測試
 ```
 
 詳細結構說明請參閱 [開發者指南](docs/DEVELOPER_GUIDE.md#-專案結構)

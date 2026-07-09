@@ -56,9 +56,8 @@ Update Time: 2024-12-15
 - 支援中斷續傳
 
 完整使用指南請參閱：
-- 快速開始：QUICKSTART.md
-- 使用指南：USER_GUIDE.md
-- 開發指南：DEVELOPER_GUIDE.md
+- 使用指南：docs/USER_GUIDE.md
+- 開發指南：docs/DEVELOPER_GUIDE.md
 """
 
 import sys
