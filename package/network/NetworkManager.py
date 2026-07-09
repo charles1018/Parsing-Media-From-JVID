@@ -5,6 +5,7 @@ Update Time: 2025-03-22
 """
 
 import random
+import threading
 import time
 
 import requests
@@ -35,6 +36,9 @@ class NetworkManager:
     BACKOFF_JITTER_MAX = 1.5
     UA_CHANGE_PROBABILITY = 0.1  # 每次請求更換 UA 的機率
 
+    # 限流/禁止類狀態碼（429/403/5xx）的重試上限，避免伺服器持續回傳時無限迴圈
+    MAX_THROTTLE_RETRIES = 5
+
     def __init__(
         self, headers=None, timeout=None, min_request_interval=None, console=None
     ):
@@ -57,22 +61,32 @@ class NetworkManager:
         )
         self.last_request_time = 0
         self.console = console
+        # 保護跨執行緒共享狀態（last_request_time、min_request_interval、headers）
+        self._lock = threading.Lock()
 
     def throttle_request(self):
-        """控制請求頻率，避免過快請求"""
-        now = time.time()
-        elapsed = now - self.last_request_time
+        """控制請求頻率，避免過快請求（執行緒安全）"""
+        with self._lock:
+            now = time.time()
+            elapsed = now - self.last_request_time
 
-        # 加入隨機成分，使請求間隔更自然
-        target_interval = self.min_request_interval + random.uniform(
-            0, self.INTERVAL_JITTER_MAX
-        )
+            # 加入隨機成分，使請求間隔更自然
+            target_interval = self.min_request_interval + random.uniform(
+                0, self.INTERVAL_JITTER_MAX
+            )
 
-        if elapsed < target_interval:
-            sleep_time = target_interval - elapsed
+            sleep_time = target_interval - elapsed if elapsed < target_interval else 0
+            # 在鎖內先預約下一次請求時間點，避免多執行緒在 sleep 期間讀到舊值而同時湧出
+            self.last_request_time = now + sleep_time
+
+        if sleep_time > 0:
             time.sleep(sleep_time)
 
-        self.last_request_time = time.time()
+    def _rotate_user_agent(self):
+        """執行緒安全地更換 User-Agent（僅在已設定時）"""
+        with self._lock:
+            if "user-agent" in self.headers:
+                self.headers["user-agent"] = self.get_random_user_agent()
 
     def handle_response_status(self, status_code, url):
         """根據狀態碼處理不同的錯誤情況"""
@@ -84,14 +98,14 @@ class NetworkManager:
             if self.console:
                 self.console.print(f"遇到限流 (429)，暫停 {wait_time:.1f} 秒: {url}")
             # 動態增加最小請求間隔
-            self.min_request_interval = min(
-                self.min_request_interval * self.INTERVAL_MULTIPLIER,
-                self.MAX_REQUEST_INTERVAL,
-            )
+            with self._lock:
+                self.min_request_interval = min(
+                    self.min_request_interval * self.INTERVAL_MULTIPLIER,
+                    self.MAX_REQUEST_INTERVAL,
+                )
             time.sleep(wait_time)
             # 更換 User-Agent
-            if "user-agent" in self.headers:
-                self.headers["user-agent"] = self.get_random_user_agent()
+            self._rotate_user_agent()
             return False
 
         elif status_code == 403:  # Forbidden
@@ -101,8 +115,7 @@ class NetworkManager:
                 self.console.print(f"請求被禁止 (403)，暫停 {wait_time:.1f} 秒: {url}")
             time.sleep(wait_time)
             # 更換 User-Agent
-            if "user-agent" in self.headers:
-                self.headers["user-agent"] = self.get_random_user_agent()
+            self._rotate_user_agent()
             return False
 
         elif status_code >= 500:  # Server errors
@@ -137,6 +150,8 @@ class NetworkManager:
             backoff_factor = self.DEFAULT_BACKOFF_FACTOR
 
         retries = 0
+        # 限流/禁止類狀態碼（429/403/5xx）的獨立計數，避免伺服器持續回傳時無限迴圈
+        throttle_retries = 0
         last_exception = None
 
         # 不同域名的重試嘗試
@@ -150,11 +165,8 @@ class NetworkManager:
                 self.throttle_request()
 
                 # 每次請求隨機更換 User-Agent
-                if (
-                    "user-agent" in self.headers
-                    and random.random() < self.UA_CHANGE_PROBABILITY
-                ):
-                    self.headers["user-agent"] = self.get_random_user_agent()
+                if random.random() < self.UA_CHANGE_PROBABILITY:
+                    self._rotate_user_agent()
 
                 # 發起請求
                 res = self.session.get(
@@ -167,7 +179,17 @@ class NetworkManager:
 
                 # 處理非200狀態碼
                 if not self.handle_response_status(res.status_code, current_url):
-                    # 如果特殊處理了狀態碼，嘗試使用相同URL重試
+                    # 特殊狀態碼（429/403/5xx）已在 handle_response_status 內等待，
+                    # 以獨立計數限制次數，達上限即放棄以避免無限迴圈
+                    throttle_retries += 1
+                    if throttle_retries >= self.MAX_THROTTLE_RETRIES:
+                        if self.console:
+                            self.console.print(
+                                f"限流/禁止重試達上限 {self.MAX_THROTTLE_RETRIES} 次，"
+                                f"放棄: {current_url}"
+                            )
+                        return None
+                    # 未達上限，使用相同URL重試
                     continue
 
                 # 一般的非200狀態碼處理
@@ -196,8 +218,7 @@ class NetworkManager:
                 time.sleep(wait_time)
 
                 # 更換 User-Agent
-                if "user-agent" in self.headers:
-                    self.headers["user-agent"] = self.get_random_user_agent()
+                self._rotate_user_agent()
 
         # 所有重試都失敗
         if last_exception and self.console:
