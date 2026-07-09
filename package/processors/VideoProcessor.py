@@ -6,6 +6,7 @@ Update Time: 2025-03-22
 
 import os
 import random
+import shutil
 import subprocess
 import time
 from functools import partial
@@ -149,7 +150,12 @@ class VideoProcessor(BaseProcessor):
                     f.write(f"file '{index}.ts'\n")
 
             # 合併 ts 檔並轉為 mp4（傳遞 version_path 而非修改實例變數）
-            self.combine_ts_to_mp4(save_path=version_path)
+            if not self.combine_ts_to_mp4(save_path=version_path):
+                self.console.print(
+                    f"[yellow]第 {i + 1} 個版本合併失敗，保留暫存檔以便修復後續傳[/yellow]"
+                )
+                all_complete = False
+                continue
 
         # 全部版本完成後才刪除暫存檔，否則保留以供續傳
         if all_complete:
@@ -242,9 +248,20 @@ class VideoProcessor(BaseProcessor):
 
         參數:
             save_path: 保存路徑（如未指定則使用 self.base_path）
+
+        返回:
+            合併成功返回 True，ffmpeg 不存在或執行失敗返回 False
         """
         if save_path is None:
             save_path = self.base_path
+
+        # 合併影片必須依賴 ffmpeg；缺少時明確報錯而非在下載完成後才崩潰
+        if shutil.which("ffmpeg") is None:
+            self.console.print(
+                "[red]找不到 ffmpeg，無法合併影片。請先安裝 ffmpeg 並確認已在 PATH 中，"
+                "分段暫存檔已保留，安裝後重新執行即可續傳。[/red]"
+            )
+            return False
 
         # 提取當前處理的版本名稱
         folder_name = os.path.basename(save_path)
@@ -258,7 +275,11 @@ class VideoProcessor(BaseProcessor):
         cmd = ["ffmpeg", "-f", "concat", "-i", "media.txt", "-c", "copy", output_name]
         self.console.print(f"執行合併命令: {' '.join(cmd)}")
 
-        pop = subprocess.Popen(cmd, stdout=PIPE, stderr=STDOUT, cwd=save_path)
+        try:
+            pop = subprocess.Popen(cmd, stdout=PIPE, stderr=STDOUT, cwd=save_path)
+        except OSError as e:
+            self.console.print(f"[red]啟動 ffmpeg 失敗: {e}[/red]")
+            return False
 
         while pop.poll() is None:
             line = pop.stdout.readline()
@@ -270,8 +291,16 @@ class VideoProcessor(BaseProcessor):
             except OSError as e:
                 self.console.print(f"讀取輸出時發生錯誤: {e}")
 
+        # 檢查 ffmpeg 回傳碼，非 0 代表合併失敗
+        if pop.returncode != 0:
+            self.console.print(
+                f"[red]ffmpeg 合併失敗（回傳碼 {pop.returncode}），保留暫存檔以便重試[/red]"
+            )
+            return False
+
         output_path = os.path.join(save_path, output_name)
         self.console.print(f"合併完成: {output_path}")
+        return True
 
     def remove_all_temp_files(self):
         """直接刪除所有版本的暫存檔，不詢問"""
